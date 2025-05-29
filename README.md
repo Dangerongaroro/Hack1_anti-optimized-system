@@ -1,1 +1,1 @@
-# Hack1_anti-optimized-system
+おかとも in
