@@ -84,3 +84,10 @@ seren-paths-app/
 - **フロントエンド**: React, Tailwind CSS
 - **バックエンド**: FastAPI (Python)
 - **開発ツール**: uvicorn (ASGI サーバー)
+
+仮想環境を構築してこちらを実行してください
+
+```
+cd path/to/seren-paths-app/backend
+pip install -r requirements.txt
+```
