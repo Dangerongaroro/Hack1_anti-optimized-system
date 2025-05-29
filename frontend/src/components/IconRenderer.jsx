@@ -1,4 +1,3 @@
-// src/components/IconRenderer.jsx
 import React from 'react';
 import { iconMap } from '../utils/helpers';
 import { HelpCircle } from 'lucide-react'; // デフォルト/フォールバック用アイコン

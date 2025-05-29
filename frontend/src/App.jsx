@@ -1,25 +1,27 @@
-// src/App.jsx
+// frontend/src/App.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { Home, Compass, BookOpen, User, X, Plus, /* 他、NavigationBarやModalで直接使うアイコン */ } from 'lucide-react'; // IconRendererで使わないものは直接インポートも可
 
 // 定数とサービス
-import { initialExperiences as initialExperiencesData, initialUserStats } from './constants/initialData';
-import api from './services/api'; // api.js からインポート
+import { initialExperiences, initialUserStats } from './constants/initialData'; // 修正: インポートパス
+import api from './services/api'; // 修正: インポートパス
 
 // コンポーネント
-import HomeScreen from './screens/HomeScreen';
+import HomeScreen from './screens/HomeScreen.jsx';
 import RecommendationScreen from './screens/RecommendationScreen';
 import JournalScreen from './screens/JournalScreen';
 import JournalEntryScreen from './screens/JournalEntryScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import NavigationBar from './components/NavigationBar';
 import ExperienceDetailModal from './components/ExperienceDetailModal';
+// App.jsx自体でlucideアイコンを直接使う場合はここでインポート
 
-// 元のSerenPathsコンポーネントのロジックをAppコンポーネントに統合
 const App = () => {
+  // 元の SerenPaths コンポーネントの useState, useEffect, 各関数定義をここにコピー
   const [currentScreen, setCurrentScreen] = useState('home');
-  const [experiences, setExperiences] = useState(() =>
-    initialExperiencesData.map(exp => ({...exp, date: new Date(exp.date)}))
+  const [experiences, setExperiences] = useState(
+    // initialExperiences の date は既に new Date() でラップされているのでそのまま使用可
+    // もし initialData.js で文字列として保持している場合はここで new Date() する
+    initialExperiences.map(exp => ({...exp, date: new Date(exp.date)}))
   );
   const [currentChallenge, setCurrentChallenge] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState(2);
@@ -32,25 +34,22 @@ const App = () => {
     challengeFrequency: 'daily'
   });
 
-  // APIを使用してレコメンドを生成
   const handleGenerateChallenge = useCallback(async () => {
     const challenge = await api.getRecommendation(selectedLevel, userPreferences);
-    setCurrentChallenge(challenge); // challenge.icon は文字列名
+    setCurrentChallenge(challenge);
   }, [selectedLevel, userPreferences]);
 
-  // チャレンジを受け入れる
   const acceptChallenge = useCallback(() => {
     if (currentChallenge) {
       const newExperience = {
-        id: experiences.length + 1, // ID生成は見直し推奨
+        id: experiences.length + 1, // 簡単なID生成
         date: new Date(),
         type: currentChallenge.type,
         level: currentChallenge.level,
         title: currentChallenge.title,
         category: currentChallenge.category,
         completed: false,
-        deviation: 30 + Math.random() * 60,
-        // iconName: currentChallenge.icon // 必要ならアイコン名を保存
+        deviation: 30 + Math.random() * 60
       };
       const updatedExperiences = [...experiences, newExperience];
       setExperiences(updatedExperiences);
@@ -60,15 +59,13 @@ const App = () => {
     }
   }, [currentChallenge, experiences]);
 
-  // 他の関数 (skipChallenge, saveJournalEntry, handleExperienceFeedback, navigateToRecommendation) も
-  // api.js の関数を使うように修正・確認
-
   const skipChallenge = useCallback(async (reason) => {
     if (currentChallenge) {
-        // currentChallenge.id が存在するか確認。ローカル生成の場合IDがない可能性がある
-        // API仕様として、レコメンドされたチャレンジにはIDが付与されることを推奨
-        const challengeId = currentChallenge.id || `local_${currentChallenge.title.replace(/\s+/g, '_')}`;
-        await api.sendFeedback(challengeId, reason);
+      // APIからのチャレンジにIDが含まれることを期待。なければ代替ID。
+      const challengeId = currentChallenge.id || `challenge_skipped_${Date.now()}`;
+      await api.sendFeedback(challengeId, reason);
+      // スキップ後、新しいチャレンジを生成するかどうかは仕様による
+      // handleGenerateChallenge(); // 必要なら呼ぶ
     }
   }, [currentChallenge]);
 
@@ -77,12 +74,13 @@ const App = () => {
       const newExperience = {
         id: experiences.length + 1,
         date: new Date(),
-        type: 'journal', // 'journal' の type に対する色設定を ExperienceStrings に追加
+        type: 'journal',
         level: 2,
         title: journalEntry.title,
         category: journalEntry.category,
         completed: true,
-        deviation: 30 + Math.random() * 60
+        deviation: 30 + Math.random() * 60,
+        emotion: journalEntry.emotion || '' // emotionも保存
       };
       const updatedExperiences = [...experiences, newExperience];
       setExperiences(updatedExperiences);
@@ -97,7 +95,7 @@ const App = () => {
       exp.id === experienceId ? { ...exp, feedback } : exp
     );
     setExperiences(updatedExperiences);
-    setSelectedExperience(null);
+    setSelectedExperience(null); // モーダルを閉じる
     await api.sendFeedback(experienceId, feedback);
     await api.updatePreferences(updatedExperiences);
   }, [experiences]);
@@ -107,9 +105,9 @@ const App = () => {
     setCurrentScreen('recommendation');
   }, [handleGenerateChallenge]);
 
-
+  // 元の SerenPaths コンポーネントの return 部分をここにコピーし、コンポーネントのパスを修正
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen relative pb-20"> {/* NavBar分のスペース */}
+    <div className="max-w-md mx-auto bg-white min-h-screen relative pb-20"> {/* NavBarの高さ分padding-bottom */}
       {currentScreen === 'home' && (
         <HomeScreen
           experiences={experiences}
@@ -123,7 +121,7 @@ const App = () => {
           currentChallenge={currentChallenge}
           selectedLevel={selectedLevel}
           setSelectedLevel={setSelectedLevel}
-          onGenerateChallenge={handleGenerateChallenge} // 再生成ボタン用
+          onGenerateChallenge={handleGenerateChallenge}
           onAcceptChallenge={acceptChallenge}
           onSkipChallenge={skipChallenge}
           onClose={() => setCurrentScreen('home')}
@@ -154,7 +152,7 @@ const App = () => {
         onFeedback={handleExperienceFeedback}
       />
 
-      {!['journal-entry', 'recommendation'].includes(currentScreen) && (
+      {!['journal-entry', 'recommendation'].includes(currentScreen) && ( // recommendation画面でもNavBar非表示
         <NavigationBar
           currentScreen={currentScreen}
           setCurrentScreen={setCurrentScreen}
@@ -164,5 +162,4 @@ const App = () => {
     </div>
   );
 };
-
 export default App;

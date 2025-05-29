@@ -84,3 +84,111 @@ seren-paths-app/
 - **フロントエンド**: React, Tailwind CSS
 - **バックエンド**: FastAPI (Python)
 - **開発ツール**: uvicorn (ASGI サーバー)
+
+## セットアップ手順
+
+### 1. プロジェクトディレクトリに移動
+
+```bash
+cd "c:\Users\masah\制作物など\hack1\Hack1_anti-optimized-system"
+```
+
+### 2. バックエンド（Python/FastAPI）のセットアップ
+
+#### 2.1 仮想環境の作成
+
+```bash
+# Pythonの仮想環境を作成
+python -m venv masahiro_env
+
+# 仮想環境をアクティベート（Windows）
+masahiro_env\Scripts\activate
+```
+
+#### 2.2 依存関係のインストール
+
+```bash
+# backendディレクトリに移動
+cd backend
+
+# 依存関係をインストール
+pip install -r requirements.txt
+```
+
+#### 2.3 バックエンドサーバーの起動
+
+```bash
+# バックエンドサーバーを起動
+python uvicorn_runner.py
+```
+
+### 3. フロントエンド（React）のセットアップ
+
+#### 3.1 新しいターミナルを開いてfrontendディレクトリに移動
+
+```bash
+cd "c:\Users\masah\制作物など\hack1\Hack1_anti-optimized-system\frontend"
+```
+
+#### 3.2 Node.jsの依存関係をインストール
+
+```bash
+npm install
+```
+
+#### 3.3 フロントエンド開発サーバーの起動
+
+```bash
+npm run dev
+```
+
+### 4. 動作確認
+
+- バックエンド: `http://127.0.0.1:8000`
+- フロントエンド: `http://localhost:5173`
+
+### 開発時の起動手順（セットアップ後）
+
+#### バックエンドの起動
+
+```bash
+cd "c:\Users\masah\制作物など\hack1\Hack1_anti-optimized-system"
+masahiro_env\Scripts\activate
+cd backend
+python uvicorn_runner.py
+```
+
+#### フロントエンドの起動（新しいターミナル）
+```bash
+cd "c:\Users\masah\制作物など\hack1\Hack1_anti-optimized-system\frontend"
+npm run dev
+```
+
+## トラブルシューティング
+
+### Python関連のエラー
+```bash
+# 仮想環境の再作成
+deactivate
+rmdir /s masahiro_env
+python -m venv masahiro_env
+masahiro_env\Scripts\activate
+```
+
+### Node.js関連のエラー
+```bash
+# node_modulesの再インストール
+cd frontend
+rmdir /s node_modules
+del package-lock.json
+npm install
+```
+
+### ポートが使用中の場合
+```bash
+# バックエンド用の別ポートを指定
+uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+
+# フロントエンド用の別ポートを指定
+npm run dev -- --port 5174
+```
