@@ -1,0 +1,233 @@
+// frontend/src/components/ExperienceStrings.jsx
+import React, { useState, useEffect, useRef } from 'react';
+// このコンポーネント内で直接 lucide-react アイコンは使っていないので、インポートは不要
+
+const ExperienceStrings = ({ experiences, onExperienceClick }) => {
+  const canvasRef = useRef(null);
+  const [hoveredExperience, setHoveredExperience] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // キャンバスクリア
+      ctx.clearRect(0, 0, width, height);
+
+      // 背景の美しいグラデーション
+      const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+      bgGradient.addColorStop(0, 'rgba(59, 130, 246, 0.03)');
+      bgGradient.addColorStop(0.5, 'rgba(147, 51, 234, 0.03)');
+      bgGradient.addColorStop(1, 'rgba(236, 72, 153, 0.03)');
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, width, height);
+
+      // 時系列順にソート
+      const sortedExperiences = [...experiences].sort((a, b) => a.date - b.date);
+      
+      // 糸の色設定
+      const colors = {
+        music: '#EC4899',
+        place: '#10B981',
+        skill: '#3B82F6',
+        art: '#F59E0B',
+        outdoor: '#8B5CF6',
+        journal: '#6366F1'
+      };
+
+      // パスポイントを計算（ランダムな角度で繋がる一本の糸）
+      const points = [];
+      const margin = 40;
+      
+      sortedExperiences.forEach((exp, index) => {
+        const progress = index / Math.max(sortedExperiences.length - 1, 1);
+        
+        // ランダムな角度と振幅
+        const angle = Math.random() * Math.PI * 2;
+        const amplitude = 50 + Math.random() * 100;
+        
+        // 基本的な進行方向に加えてランダムな動き
+        const baseX = margin + (width - margin * 2) * progress;
+        const baseY = height / 2;
+        
+        const x = baseX + Math.cos(angle) * amplitude * 0.3;
+        const y = baseY + Math.sin(angle) * amplitude;
+        
+        points.push({ 
+          x, 
+          y, 
+          exp, 
+          color: colors[exp.type],
+          angle
+        });
+      });
+
+      // 美しいベジェ曲線で繋ぐ
+      if (points.length > 1) {
+        // メインの糸を描画
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        
+        for (let i = 1; i < points.length; i++) {
+          const prev = points[i - 1];
+          const curr = points[i];
+          
+          // コントロールポイントを計算
+          const cp1x = prev.x + (curr.x - prev.x) * 0.5;
+          const cp1y = prev.y;
+          const cp2x = prev.x + (curr.x - prev.x) * 0.5;
+          const cp2y = curr.y;
+          
+          // セグメントごとにグラデーション
+          const segmentGradient = ctx.createLinearGradient(prev.x, prev.y, curr.x, curr.y);
+          segmentGradient.addColorStop(0, prev.color + '60');
+          segmentGradient.addColorStop(1, curr.color + '60');
+          
+          ctx.strokeStyle = segmentGradient;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, curr.x, curr.y);
+          ctx.stroke();
+        }
+        
+        // 装飾的な背景の糸
+        ctx.globalAlpha = 0.1;
+        for (let offset = -20; offset <= 20; offset += 10) {
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y + offset);
+          
+          for (let i = 1; i < points.length; i++) {
+            const prev = points[i - 1];
+            const curr = points[i];
+            const cp1x = prev.x + (curr.x - prev.x) * 0.5;
+            const cp1y = prev.y + offset;
+            const cp2x = prev.x + (curr.x - prev.x) * 0.5;
+            const cp2y = curr.y + offset;
+            
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, curr.x, curr.y + offset);
+          }
+          
+          ctx.strokeStyle = '#9333EA';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      // 各体験ポイントを描画
+      points.forEach((point, index) => {
+        const isHovered = hoveredExperience === point.exp.id;
+        const size = isHovered ? 12 : 8;
+        
+        // 外側の光彩
+        const glowGradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, size * 3);
+        glowGradient.addColorStop(0, point.color + (isHovered ? '40' : '20'));
+        glowGradient.addColorStop(1, point.color + '00');
+        ctx.fillStyle = glowGradient;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, size * 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // メインの点
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+        const pointGradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, size);
+        pointGradient.addColorStop(0, '#FFFFFF');
+        pointGradient.addColorStop(0.7, point.color);
+        pointGradient.addColorStop(1, point.color + 'DD');
+        ctx.fillStyle = pointGradient;
+        ctx.fill();
+        
+        // 内側の光
+        ctx.beginPath();
+        ctx.arc(point.x - size * 0.3, point.y - size * 0.3, size * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF90';
+        ctx.fill();
+      });
+
+      // クリッカブルエリアをメモリに保存
+      canvas.experiencePoints = points;
+    }
+  }, [experiences, hoveredExperience]);
+
+  // マウスイベントハンドリング
+  const handleMouseMove = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setMousePos({ x, y });
+    
+    // ホバー判定
+    if (canvas.experiencePoints) {
+      const hovered = canvas.experiencePoints.find(point => {
+        const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+        return distance < 15;
+      });
+      
+      setHoveredExperience(hovered ? hovered.exp.id : null);
+      canvas.style.cursor = hovered ? 'pointer' : 'default';
+    }
+  };
+
+  const handleClick = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if (canvas.experiencePoints) {
+      const clicked = canvas.experiencePoints.find(point => {
+        const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+        return distance < 15;
+      });
+      
+      if (clicked && onExperienceClick) {
+        onExperienceClick(clicked.exp);
+      }
+    }
+  };
+
+  return (
+    <div className="relative bg-white/40 backdrop-blur-lg rounded-3xl p-6 shadow-xl">
+      <canvas
+        ref={canvasRef}
+        width={350}
+        height={400}
+        className="w-full max-w-md mx-auto"
+        onMouseMove={handleMouseMove}
+        onClick={handleClick}
+        onMouseLeave={() => setHoveredExperience(null)}
+      />
+      
+      {/* ホバー時のツールチップ */}
+      {hoveredExperience && (
+        <div 
+          className="absolute bg-gray-900 text-white px-3 py-2 rounded-lg text-sm pointer-events-none z-10"
+          style={{ 
+            left: `${mousePos.x}px`, 
+            top: `${mousePos.y - 40}px`,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          {experiences.find(e => e.id === hoveredExperience)?.title}
+        </div>
+      )}
+      
+      <div className="mt-4 text-center">
+        <p className="text-sm text-gray-600">
+          あなたの旅が美しい一本の物語を紡いでいます
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          点をクリックして体験の詳細を見る
+        </p>
+      </div>
+    </div>
+  );
+};
+export default ExperienceStrings;
