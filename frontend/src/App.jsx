@@ -9,8 +9,6 @@ import api from './services/api';
 // コンポーネント
 import HomeScreen from './screens/HomeScreen.jsx';
 import RecommendationScreen from './screens/RecommendationScreen';
-import JournalScreen from './screens/JournalScreen';
-import JournalEntryScreen from './screens/JournalEntryScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import NavigationBar from './components/NavigationBar';
@@ -155,21 +153,6 @@ const App = () => {
           onAcceptChallenge={acceptChallenge}
           onSkipChallenge={skipChallenge}
           onClose={() => setCurrentScreen('home')}
-        />
-      )}
-      {currentScreen === 'journal' && (
-        <JournalScreen
-          experiences={experiences}
-          userStats={userStats}
-          onNavigateToEntry={() => setCurrentScreen('journal-entry')}
-        />
-      )}
-      {currentScreen === 'journal-entry' && (
-        <JournalEntryScreen
-          journalEntry={journalEntry}
-          setJournalEntry={setJournalEntry}
-          onSave={saveJournalEntry}
-          onClose={() => setCurrentScreen('journal')}
         />
       )}
       {currentScreen === 'profile' && (

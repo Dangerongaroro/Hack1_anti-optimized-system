@@ -445,7 +445,13 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
             className="w-full h-auto rounded-2xl"
             onMouseMove={handleMouseMove}
             onClick={handleCanvasClick}
-            style={{ display: 'block', cursor: 'pointer' }}
+            style={{ 
+              display: 'block', 
+              cursor: 'pointer',
+              width: '400px', 
+              height: '400px', 
+              backgroundColor: 'white' 
+            }}
           />
           
           {/* ホバー時の詳細表示 */}
