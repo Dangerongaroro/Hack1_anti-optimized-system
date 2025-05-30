@@ -207,10 +207,10 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
 
   try {
     return (
-      <div className="" ref={containerRef}>
+      <div className="px-4" ref={containerRef}>
         
         {/* 美しいキャンバス部分 */}
-        <div className="relative mb-8 bg-gradient-to-br from-purple-50/80 via-pink-50/60 to-blue-50/80 rounded-3xl p-6 shadow-lg backdrop-blur-sm border border-white/20">
+        <div className="relative mb-8 bg-gradient-to-br from-purple-50/80 via-pink-50/60 to-blue-50/80 rounded-3xl shadow-lg backdrop-blur-sm border border-white/20">
           <canvas
             ref={canvasRef}
             className="w-full h-auto rounded-2xl"
@@ -270,7 +270,7 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
                 onClick={() => onExperienceClick?.(experience)}
                 onMouseEnter={() => setHoveredExperience(experience)}
                 onMouseLeave={() => setHoveredExperience(null)}
-                className="group relative bg-white/70 backdrop-blur-md rounded-xl p-3 cursor-pointer transition-all duration-300 hover:bg-white/90 hover:shadow-md border border-white/30"
+                className="group relative bg-white/70 backdrop-blur-md rounded-xl p-3 cursor-pointer transition-all duration-300 hover:bg-white/90 hover:shadow-md border border-white/30 w-full"
               >
                 <div className="flex items-center gap-3">
                   <div 
