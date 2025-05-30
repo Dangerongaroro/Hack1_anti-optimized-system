@@ -81,13 +81,9 @@ const ExperienceStrings = ({ experiences, onExperienceClick }) => {
           const cp2x = prev.x + (curr.x - prev.x) * 0.5;
           const cp2y = curr.y;
           
-          // セグメントごとにグラデーション
-          const segmentGradient = ctx.createLinearGradient(prev.x, prev.y, curr.x, curr.y);
-          segmentGradient.addColorStop(0, prev.color + '60');
-          segmentGradient.addColorStop(1, curr.color + '60');
-          
-          ctx.strokeStyle = segmentGradient;
-          ctx.lineWidth = 3;
+          // セグメントごとに色分け
+          ctx.strokeStyle = prev.color;
+          ctx.lineWidth = 6;
           ctx.beginPath();
           ctx.moveTo(prev.x, prev.y);
           ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, curr.x, curr.y);
@@ -121,7 +117,7 @@ const ExperienceStrings = ({ experiences, onExperienceClick }) => {
       // 各体験ポイントを描画
       points.forEach((point, index) => {
         const isHovered = hoveredExperience === point.exp.id;
-        const size = isHovered ? 12 : 8;
+        const size = isHovered ? 9 : 6;
         
         // 外側の光彩
         const glowGradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, size * 3);
@@ -152,7 +148,7 @@ const ExperienceStrings = ({ experiences, onExperienceClick }) => {
       // クリッカブルエリアをメモリに保存
       canvas.experiencePoints = points;
     }
-  }, [experiences, hoveredExperience]);
+  }, [experiences]);
 
   // マウスイベントハンドリング
   const handleMouseMove = (e) => {
@@ -165,14 +161,51 @@ const ExperienceStrings = ({ experiences, onExperienceClick }) => {
     
     // ホバー判定
     if (canvas.experiencePoints) {
-      const hovered = canvas.experiencePoints.find(point => {
-        const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
-        return distance < 15;
-      });
+      let hovered = null;
+      for (let i = 1; i < canvas.experiencePoints.length; i++) {
+        const p1 = canvas.experiencePoints[i - 1];
+        const p2 = canvas.experiencePoints[i];
+        const distance = pointToLineDistance(x, y, p1.x, p1.y, p2.x, p2.y);
+        if (distance < 7) {
+          hovered = p1;
+          break;
+        }
+      }
       
       setHoveredExperience(hovered ? hovered.exp.id : null);
       canvas.style.cursor = hovered ? 'pointer' : 'default';
     }
+  };
+
+  // 点と線分の距離を計算する関数
+  const pointToLineDistance = (x, y, x1, y1, x2, y2) => {
+    const A = x - x1;
+    const B = y - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const len_sq = C * C + D * D;
+    let param = -1;
+    if (len_sq != 0) // 線分の長さが0の場合を除く
+      param = dot / len_sq;
+
+    let xx, yy;
+
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    }
+    else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    }
+    else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+
+    return Math.sqrt((x - xx) ** 2 + (y - yy) ** 2);
   };
 
   const handleClick = (e) => {
@@ -182,10 +215,16 @@ const ExperienceStrings = ({ experiences, onExperienceClick }) => {
     const y = e.clientY - rect.top;
     
     if (canvas.experiencePoints) {
-      const clicked = canvas.experiencePoints.find(point => {
-        const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
-        return distance < 15;
-      });
+      let clicked = null;
+      for (let i = 1; i < canvas.experiencePoints.length; i++) {
+        const p1 = canvas.experiencePoints[i - 1];
+        const p2 = canvas.experiencePoints[i];
+        const distance = pointToLineDistance(x, y, p1.x, p1.y, p2.x, p2.y);
+        if (distance < 7) {
+          clicked = p1;
+          break;
+        }
+      }
       
       if (clicked && onExperienceClick) {
         onExperienceClick(clicked.exp);
