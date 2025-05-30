@@ -146,14 +146,14 @@ const App = () => {
   // 初回起動時はオンボーディング画面を表示
   if (isFirstLaunch) {
     return (
-      <ErrorBoundary>
+      <ErrorBoundary className="min-h-screen">
         <OnboardingScreen onComplete={handleOnboardingComplete} />
       </ErrorBoundary>
     );
   }
 
   return (
-    <div className="mx-auto bg-white min-h-screen relative pb-20 flex items-center justify-center max-w-md"> {/* NavBarの高さ分padding-bottom */}
+    <div className="mx-auto bg-white w-full relative pb-20 flex items-center justify-center"> {/* NavBarの高さ分padding-bottom */}
       {currentScreen === 'home' && (
         <HomeScreen
           experiences={experiences}
