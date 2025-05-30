@@ -1,9 +1,10 @@
 // frontend/src/App.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // 定数とサービス
-import { initialExperiences, initialUserStats } from './constants/initialData'; // 修正: インポートパス
-import api from './services/api'; // 修正: インポートパス
+import { initialExperiences, initialUserStats } from './constants/initialData';
+import api from './services/api';
 
 // コンポーネント
 import HomeScreen from './screens/HomeScreen.jsx';
@@ -11,16 +12,19 @@ import RecommendationScreen from './screens/RecommendationScreen';
 import JournalScreen from './screens/JournalScreen';
 import JournalEntryScreen from './screens/JournalEntryScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import OnboardingScreen from './screens/OnboardingScreen';
 import NavigationBar from './components/NavigationBar';
 import ExperienceDetailModal from './components/ExperienceDetailModal';
-// App.jsx自体でlucideアイコンを直接使う場合はここでインポート
 
 const App = () => {
-  // 元の SerenPaths コンポーネントの useState, useEffect, 各関数定義をここにコピー
+  const [isFirstLaunch, setIsFirstLaunch] = useState(true);
+  const [userPreferences, setUserPreferences] = useState({
+    avoidCategories: [],
+    preferredCategories: [],
+    challengeFrequency: 'daily'
+  });
   const [currentScreen, setCurrentScreen] = useState('home');
   const [experiences, setExperiences] = useState(
-    // initialExperiences の date は既に new Date() でラップされているのでそのまま使用可
-    // もし initialData.js で文字列として保持している場合はここで new Date() する
     initialExperiences.map(exp => ({...exp, date: new Date(exp.date)}))
   );
   const [currentChallenge, setCurrentChallenge] = useState(null);
@@ -28,21 +32,42 @@ const App = () => {
   const [journalEntry, setJournalEntry] = useState({ title: '', category: '', emotion: '' });
   const [userStats, setUserStats] = useState(initialUserStats);
   const [selectedExperience, setSelectedExperience] = useState(null);
-  const [userPreferences, setUserPreferences] = useState({
-    avoidCategories: [],
-    preferredCategories: [],
-    challengeFrequency: 'daily'
-  });
 
+  // 初回起動チェック
+  useEffect(() => {
+    const savedPreferences = localStorage.getItem('userPreferences');
+    if (savedPreferences) {
+      const preferences = JSON.parse(savedPreferences);
+      if (preferences.setupCompleted) {
+        setUserPreferences(preferences);
+        setSelectedLevel(preferences.challengeLevel || 2);
+        setIsFirstLaunch(false);
+      }
+    }
+  }, []);
+
+  // オンボーディング完了ハンドラー
+  const handleOnboardingComplete = (preferences) => {
+    setUserPreferences(preferences);
+    setSelectedLevel(preferences.challengeLevel || 2);
+    setIsFirstLaunch(false);
+    console.log('✅ Onboarding completed:', preferences);
+  };
+
+  // 既存の関数たち...
   const handleGenerateChallenge = useCallback(async () => {
-    const challenge = await api.getRecommendation(selectedLevel, userPreferences);
-    setCurrentChallenge(challenge);
+    try {
+      const challenge = await api.getRecommendation(selectedLevel, userPreferences);
+      setCurrentChallenge(challenge);
+    } catch (error) {
+      console.error('Challenge generation failed:', error);
+    }
   }, [selectedLevel, userPreferences]);
 
   const acceptChallenge = useCallback(() => {
     if (currentChallenge) {
       const newExperience = {
-        id: experiences.length + 1, // 簡単なID生成
+        id: experiences.length + 1,
         date: new Date(),
         type: currentChallenge.type,
         level: currentChallenge.level,
@@ -61,11 +86,8 @@ const App = () => {
 
   const skipChallenge = useCallback(async (reason) => {
     if (currentChallenge) {
-      // APIからのチャレンジにIDが含まれることを期待。なければ代替ID。
       const challengeId = currentChallenge.id || `challenge_skipped_${Date.now()}`;
       await api.sendFeedback(challengeId, reason);
-      // スキップ後、新しいチャレンジを生成するかどうかは仕様による
-      // handleGenerateChallenge(); // 必要なら呼ぶ
     }
   }, [currentChallenge]);
 
@@ -80,7 +102,7 @@ const App = () => {
         category: journalEntry.category,
         completed: true,
         deviation: 30 + Math.random() * 60,
-        emotion: journalEntry.emotion || '' // emotionも保存
+        emotion: journalEntry.emotion || ''
       };
       const updatedExperiences = [...experiences, newExperience];
       setExperiences(updatedExperiences);
@@ -95,7 +117,7 @@ const App = () => {
       exp.id === experienceId ? { ...exp, feedback } : exp
     );
     setExperiences(updatedExperiences);
-    setSelectedExperience(null); // モーダルを閉じる
+    setSelectedExperience(null);
     await api.sendFeedback(experienceId, feedback);
     await api.updatePreferences(updatedExperiences);
   }, [experiences]);
@@ -105,61 +127,85 @@ const App = () => {
     setCurrentScreen('recommendation');
   }, [handleGenerateChallenge]);
 
-  // 元の SerenPaths コンポーネントの return 部分をここにコピーし、コンポーネントのパスを修正
+  // 初回起動時はオンボーディング画面を表示
+  if (isFirstLaunch) {
+    return (
+      <ErrorBoundary>
+        <OnboardingScreen onComplete={handleOnboardingComplete} />
+      </ErrorBoundary>
+    );
+  }
+
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen relative pb-20"> {/* NavBarの高さ分padding-bottom */}
-      {currentScreen === 'home' && (
-        <HomeScreen
-          experiences={experiences}
-          userStats={userStats}
-          onNavigateToRecommendation={navigateToRecommendation}
-          onExperienceClick={setSelectedExperience}
-        />
-      )}
-      {currentScreen === 'recommendation' && (
-        <RecommendationScreen
-          currentChallenge={currentChallenge}
-          selectedLevel={selectedLevel}
-          setSelectedLevel={setSelectedLevel}
-          onGenerateChallenge={handleGenerateChallenge}
-          onAcceptChallenge={acceptChallenge}
-          onSkipChallenge={skipChallenge}
-          onClose={() => setCurrentScreen('home')}
-        />
-      )}
-      {currentScreen === 'journal' && (
-        <JournalScreen
-          experiences={experiences}
-          userStats={userStats}
-          onNavigateToEntry={() => setCurrentScreen('journal-entry')}
-        />
-      )}
-      {currentScreen === 'journal-entry' && (
-        <JournalEntryScreen
-          journalEntry={journalEntry}
-          setJournalEntry={setJournalEntry}
-          onSave={saveJournalEntry}
-          onClose={() => setCurrentScreen('journal')}
-        />
-      )}
-      {currentScreen === 'profile' && (
-        <ProfileScreen userStats={userStats} />
-      )}
+    <ErrorBoundary>
+      <div className="max-w-md mx-auto bg-white min-h-screen relative pb-20">
+        {currentScreen === 'home' && (
+          <HomeScreen
+            experiences={experiences}
+            userStats={userStats}
+            onNavigateToRecommendation={navigateToRecommendation}
+            onExperienceClick={setSelectedExperience}
+          />
+        )}
+        
+        {currentScreen === 'recommendation' && (
+          <RecommendationScreen
+            currentChallenge={currentChallenge}
+            selectedLevel={selectedLevel}
+            setSelectedLevel={setSelectedLevel}
+            onGenerateChallenge={handleGenerateChallenge}
+            onAcceptChallenge={acceptChallenge}
+            onSkipChallenge={skipChallenge}
+            onClose={() => setCurrentScreen('home')}
+          />
+        )}
+        
+        {currentScreen === 'journal' && (
+          <JournalScreen
+            experiences={experiences}
+            userStats={userStats}
+            onNavigateToEntry={() => setCurrentScreen('journal-entry')}
+          />
+        )}
+        
+        {currentScreen === 'journal-entry' && (
+          <JournalEntryScreen
+            journalEntry={journalEntry}
+            setJournalEntry={setJournalEntry}
+            onSave={saveJournalEntry}
+            onClose={() => setCurrentScreen('journal')}
+          />
+        )}
+        
+        {currentScreen === 'profile' && (
+          <ProfileScreen 
+            userStats={userStats}
+            userPreferences={userPreferences}
+            onResetOnboarding={() => {
+              localStorage.removeItem('userPreferences');
+              setIsFirstLaunch(true);
+            }}
+          />
+        )}
 
-      <ExperienceDetailModal
-        experience={selectedExperience}
-        onClose={() => setSelectedExperience(null)}
-        onFeedback={handleExperienceFeedback}
-      />
+        {selectedExperience && (
+          <ExperienceDetailModal
+            experience={selectedExperience}
+            onClose={() => setSelectedExperience(null)}
+            onFeedback={handleExperienceFeedback}
+          />
+        )}
 
-      {!['journal-entry', 'recommendation'].includes(currentScreen) && ( // recommendation画面でもNavBar非表示
-        <NavigationBar
-          currentScreen={currentScreen}
-          setCurrentScreen={setCurrentScreen}
-          onNavigateToRecommendation={navigateToRecommendation}
-        />
-      )}
-    </div>
+        {!['journal-entry', 'recommendation'].includes(currentScreen) && (
+          <NavigationBar
+            currentScreen={currentScreen}
+            setCurrentScreen={setCurrentScreen}
+            onNavigateToRecommendation={navigateToRecommendation}
+          />
+        )}
+      </div>
+    </ErrorBoundary>
   );
 };
+
 export default App;

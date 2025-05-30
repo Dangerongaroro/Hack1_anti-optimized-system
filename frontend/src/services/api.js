@@ -1,7 +1,7 @@
 import { generateChallengeLocal } from '../utils/helpers.js';
 
-// API設定
-const API_BASE_URL = 'http://localhost:8000/api';
+// API設定 - ポートを8001に変更
+const API_BASE_URL = 'http://localhost:8001/api';
 
 const api = {
   // レコメンド取得
