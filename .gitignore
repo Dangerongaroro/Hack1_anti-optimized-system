@@ -84,5 +84,5 @@ masahiro_env/
 .cache/
 
 frontend/node_modules/     # npm installで再生成可能
-frontend/.vite/           # Viteの開発用キャッシュ
+frontend/.vite          # Viteの開発用キャッシュ
 frontend/package-lock.json # プロジェクトによっては
