@@ -82,3 +82,4 @@ masahiro_env/
 *.tmp
 *.temp
 .cache/
+masahiro_env/
