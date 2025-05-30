@@ -137,56 +137,44 @@ const App = () => {
   }
 
   return (
-    <ErrorBoundary>
-      <div className="max-w-md mx-auto bg-white min-h-screen relative pb-20">
-        {currentScreen === 'home' && (
-          <HomeScreen
-            experiences={experiences}
-            userStats={userStats}
-            onNavigateToRecommendation={navigateToRecommendation}
-            onExperienceClick={setSelectedExperience}
-          />
-        )}
-        
-        {currentScreen === 'recommendation' && (
-          <RecommendationScreen
-            currentChallenge={currentChallenge}
-            selectedLevel={selectedLevel}
-            setSelectedLevel={setSelectedLevel}
-            onGenerateChallenge={handleGenerateChallenge}
-            onAcceptChallenge={acceptChallenge}
-            onSkipChallenge={skipChallenge}
-            onClose={() => setCurrentScreen('home')}
-          />
-        )}
-        
-        {currentScreen === 'journal' && (
-          <JournalScreen
-            experiences={experiences}
-            userStats={userStats}
-            onNavigateToEntry={() => setCurrentScreen('journal-entry')}
-          />
-        )}
-        
-        {currentScreen === 'journal-entry' && (
-          <JournalEntryScreen
-            journalEntry={journalEntry}
-            setJournalEntry={setJournalEntry}
-            onSave={saveJournalEntry}
-            onClose={() => setCurrentScreen('journal')}
-          />
-        )}
-        
-        {currentScreen === 'profile' && (
-          <ProfileScreen 
-            userStats={userStats}
-            userPreferences={userPreferences}
-            onResetOnboarding={() => {
-              localStorage.removeItem('userPreferences');
-              setIsFirstLaunch(true);
-            }}
-          />
-        )}
+    <div className="mx-auto bg-white min-h-screen relative pb-20 flex items-center justify-center max-w-md"> {/* NavBarの高さ分padding-bottom */}
+      {currentScreen === 'home' && (
+        <HomeScreen
+          experiences={experiences}
+          userStats={userStats}
+          onNavigateToRecommendation={navigateToRecommendation}
+          onExperienceClick={setSelectedExperience}
+        />
+      )}
+      {currentScreen === 'recommendation' && (
+        <RecommendationScreen
+          currentChallenge={currentChallenge}
+          selectedLevel={selectedLevel}
+          setSelectedLevel={setSelectedLevel}
+          onGenerateChallenge={handleGenerateChallenge}
+          onAcceptChallenge={acceptChallenge}
+          onSkipChallenge={skipChallenge}
+          onClose={() => setCurrentScreen('home')}
+        />
+      )}
+      {currentScreen === 'journal' && (
+        <JournalScreen
+          experiences={experiences}
+          userStats={userStats}
+          onNavigateToEntry={() => setCurrentScreen('journal-entry')}
+        />
+      )}
+      {currentScreen === 'journal-entry' && (
+        <JournalEntryScreen
+          journalEntry={journalEntry}
+          setJournalEntry={setJournalEntry}
+          onSave={saveJournalEntry}
+          onClose={() => setCurrentScreen('journal')}
+        />
+      )}
+      {currentScreen === 'profile' && (
+        <ProfileScreen userStats={userStats} />
+      )}
 
         {selectedExperience && (
           <ExperienceDetailModal
@@ -196,15 +184,14 @@ const App = () => {
           />
         )}
 
-        {!['journal-entry', 'recommendation'].includes(currentScreen) && (
-          <NavigationBar
-            currentScreen={currentScreen}
-            setCurrentScreen={setCurrentScreen}
-            onNavigateToRecommendation={navigateToRecommendation}
-          />
-        )}
-      </div>
-    </ErrorBoundary>
+      {!['journal-entry'].includes(currentScreen) && ( // recommendation画面でもNavBar非表示
+        <NavigationBar
+          currentScreen={currentScreen}
+          setCurrentScreen={setCurrentScreen}
+          onNavigateToRecommendation={navigateToRecommendation}
+        />
+      )}
+    </div>
   );
 };
 

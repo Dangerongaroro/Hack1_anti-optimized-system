@@ -15,9 +15,6 @@ const RecommendationScreen = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-6">
       <div className="flex justify-between items-center mb-8">
-        <button onClick={onClose} className="p-2">
-          <X className="w-6 h-6 text-gray-600" />
-        </button>
         <h2 className="text-xl font-bold text-gray-800">今日のお題</h2>
         <div className="w-10"></div>
       </div>

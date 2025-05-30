@@ -27,75 +27,203 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     );
   }
 
-  // カテゴリー別のカラーマッピング（RGBA形式で管理）
+  // カテゴリー別のカラーマッピング（より多くのパターンに対応）
   const categoryColors = {
     'アート・創作': {
       primary: '#8B5CF6',
       rgba: { r: 139, g: 92, b: 246 },
-      light: 'rgba(139, 92, 246, 0.1)',
-      medium: 'rgba(139, 92, 246, 0.6)',
-      dark: 'rgba(139, 92, 246, 0.8)'
+      light: 'rgba(139, 92, 246, 0.15)',
+      medium: 'rgba(139, 92, 246, 0.5)',
+      dark: 'rgba(139, 92, 246, 0.9)'
     },
     '料理・グルメ': {
-      primary: '#EF4444',
-      rgba: { r: 239, g: 68, b: 68 },
-      light: 'rgba(239, 68, 68, 0.1)',
-      medium: 'rgba(239, 68, 68, 0.6)',
-      dark: 'rgba(239, 68, 68, 0.8)'
+      primary: '#F97316',
+      rgba: { r: 249, g: 115, b: 22 },
+      light: 'rgba(249, 115, 22, 0.15)',
+      medium: 'rgba(249, 115, 22, 0.5)',
+      dark: 'rgba(249, 115, 22, 0.9)'
     },
     '自然・アウトドア': {
-      primary: '#10B981',
-      rgba: { r: 16, g: 185, b: 129 },
-      light: 'rgba(16, 185, 129, 0.1)',
-      medium: 'rgba(16, 185, 129, 0.6)',
-      dark: 'rgba(16, 185, 129, 0.8)'
+      primary: '#22C55E',
+      rgba: { r: 34, g: 197, b: 94 },
+      light: 'rgba(34, 197, 94, 0.15)',
+      medium: 'rgba(34, 197, 94, 0.5)',
+      dark: 'rgba(34, 197, 94, 0.9)'
     },
     'スポーツ・運動': {
       primary: '#F59E0B',
       rgba: { r: 245, g: 158, b: 11 },
-      light: 'rgba(245, 158, 11, 0.1)',
-      medium: 'rgba(245, 158, 11, 0.6)',
-      dark: 'rgba(245, 158, 11, 0.8)'
+      light: 'rgba(245, 158, 11, 0.15)',
+      medium: 'rgba(245, 158, 11, 0.5)',
+      dark: 'rgba(245, 158, 11, 0.9)'
     },
     '学習・読書': {
       primary: '#3B82F6',
       rgba: { r: 59, g: 130, b: 246 },
-      light: 'rgba(59, 130, 246, 0.1)',
-      medium: 'rgba(59, 130, 246, 0.6)',
-      dark: 'rgba(59, 130, 246, 0.8)'
+      light: 'rgba(59, 130, 246, 0.15)',
+      medium: 'rgba(59, 130, 246, 0.5)',
+      dark: 'rgba(59, 130, 246, 0.9)'
     },
     '音楽・エンタメ': {
       primary: '#EC4899',
       rgba: { r: 236, g: 72, b: 153 },
-      light: 'rgba(236, 72, 153, 0.1)',
-      medium: 'rgba(236, 72, 153, 0.6)',
-      dark: 'rgba(236, 72, 153, 0.8)'
+      light: 'rgba(236, 72, 153, 0.15)',
+      medium: 'rgba(236, 72, 153, 0.5)',
+      dark: 'rgba(236, 72, 153, 0.9)'
     },
     'ソーシャル': {
       primary: '#06B6D4',
       rgba: { r: 6, g: 182, b: 212 },
-      light: 'rgba(6, 182, 212, 0.1)',
-      medium: 'rgba(6, 182, 212, 0.6)',
-      dark: 'rgba(6, 182, 212, 0.8)'
+      light: 'rgba(6, 182, 212, 0.15)',
+      medium: 'rgba(6, 182, 212, 0.5)',
+      dark: 'rgba(6, 182, 212, 0.9)'
     },
     'ライフスタイル': {
       primary: '#84CC16',
       rgba: { r: 132, g: 204, b: 22 },
-      light: 'rgba(132, 204, 22, 0.1)',
-      medium: 'rgba(132, 204, 22, 0.6)',
-      dark: 'rgba(132, 204, 22, 0.8)'
+      light: 'rgba(132, 204, 22, 0.15)',
+      medium: 'rgba(132, 204, 22, 0.5)',
+      dark: 'rgba(132, 204, 22, 0.9)'
+    },
+    // よくあるカテゴリーの別名・英語名も追加
+    'challenge': {
+      primary: '#8B5CF6',
+      rgba: { r: 139, g: 92, b: 246 },
+      light: 'rgba(139, 92, 246, 0.15)',
+      medium: 'rgba(139, 92, 246, 0.5)',
+      dark: 'rgba(139, 92, 246, 0.9)'
+    },
+    'journal': {
+      primary: '#EC4899',
+      rgba: { r: 236, g: 72, b: 153 },
+      light: 'rgba(236, 72, 153, 0.15)',
+      medium: 'rgba(236, 72, 153, 0.5)',
+      dark: 'rgba(236, 72, 153, 0.9)'
+    },
+    'art': {
+      primary: '#8B5CF6',
+      rgba: { r: 139, g: 92, b: 246 },
+      light: 'rgba(139, 92, 246, 0.15)',
+      medium: 'rgba(139, 92, 246, 0.5)',
+      dark: 'rgba(139, 92, 246, 0.9)'
+    },
+    'food': {
+      primary: '#F97316',
+      rgba: { r: 249, g: 115, b: 22 },
+      light: 'rgba(249, 115, 22, 0.15)',
+      medium: 'rgba(249, 115, 22, 0.5)',
+      dark: 'rgba(249, 115, 22, 0.9)'
+    },
+    'nature': {
+      primary: '#22C55E',
+      rgba: { r: 34, g: 197, b: 94 },
+      light: 'rgba(34, 197, 94, 0.15)',
+      medium: 'rgba(34, 197, 94, 0.5)',
+      dark: 'rgba(34, 197, 94, 0.9)'
+    },
+    'sport': {
+      primary: '#F59E0B',
+      rgba: { r: 245, g: 158, b: 11 },
+      light: 'rgba(245, 158, 11, 0.15)',
+      medium: 'rgba(245, 158, 11, 0.5)',
+      dark: 'rgba(245, 158, 11, 0.9)'
+    },
+    'study': {
+      primary: '#3B82F6',
+      rgba: { r: 59, g: 130, b: 246 },
+      light: 'rgba(59, 130, 246, 0.15)',
+      medium: 'rgba(59, 130, 246, 0.5)',
+      dark: 'rgba(59, 130, 246, 0.9)'
+    },
+    'music': {
+      primary: '#EC4899',
+      rgba: { r: 236, g: 72, b: 153 },
+      light: 'rgba(236, 72, 153, 0.15)',
+      medium: 'rgba(236, 72, 153, 0.5)',
+      dark: 'rgba(236, 72, 153, 0.9)'
+    },
+    'social': {
+      primary: '#06B6D4',
+      rgba: { r: 6, g: 182, b: 212 },
+      light: 'rgba(6, 182, 212, 0.15)',
+      medium: 'rgba(6, 182, 212, 0.5)',
+      dark: 'rgba(6, 182, 212, 0.9)'
+    },
+    'lifestyle': {
+      primary: '#84CC16',
+      rgba: { r: 132, g: 204, b: 22 },
+      light: 'rgba(132, 204, 22, 0.15)',
+      medium: 'rgba(132, 204, 22, 0.5)',
+      dark: 'rgba(132, 204, 22, 0.9)'
+    },
+    // タイプ別のカテゴリーも追加
+    'experience': {
+      primary: '#8B5CF6',
+      rgba: { r: 139, g: 92, b: 246 },
+      light: 'rgba(139, 92, 246, 0.15)',
+      medium: 'rgba(139, 92, 246, 0.5)',
+      dark: 'rgba(139, 92, 246, 0.9)'
     },
     'その他': {
-      primary: '#6B7280',
-      rgba: { r: 107, g: 114, b: 128 },
-      light: 'rgba(107, 114, 128, 0.1)',
-      medium: 'rgba(107, 114, 128, 0.6)',
-      dark: 'rgba(107, 114, 128, 0.8)'
+      primary: '#10B981', // 灰色から鮮やかな緑色に変更
+      rgba: { r: 16, g: 185, b: 129 },
+      light: 'rgba(16, 185, 129, 0.15)',
+      medium: 'rgba(16, 185, 129, 0.5)',
+      dark: 'rgba(16, 185, 129, 0.9)'
     }
   };
 
   const getCategoryColor = (category) => {
-    return categoryColors[category] || categoryColors['その他'];
+    console.log('🎨 Category color request:', category, 'Available categories:', Object.keys(categoryColors));
+    
+    // undefined や null の場合は即座にデフォルトを返す
+    if (!category) {
+      console.log('🎨 No category provided, using default');
+      return categoryColors['その他'];
+    }
+    
+    // 完全一致を試す
+    if (categoryColors[category]) {
+      console.log('🎨 Found exact match for:', category);
+      return categoryColors[category];
+    }
+    
+    // 部分一致を試す（大文字小文字を無視）
+    const lowerCategory = category.toLowerCase();
+    for (const [key, value] of Object.entries(categoryColors)) {
+      if (key.toLowerCase().includes(lowerCategory) || lowerCategory.includes(key.toLowerCase())) {
+        console.log('🎨 Found partial match:', key, 'for:', category);
+        return value;
+      }
+    }
+    
+    // キーワードマッチングも試す
+    const keywordMap = {
+      'アート': 'アート・創作',
+      '創作': 'アート・創作',
+      '料理': '料理・グルメ',
+      'グルメ': '料理・グルメ',
+      '自然': '自然・アウトドア',
+      'アウトドア': '自然・アウトドア',
+      'スポーツ': 'スポーツ・運動',
+      '運動': 'スポーツ・運動',
+      '学習': '学習・読書',
+      '読書': '学習・読書',
+      '音楽': '音楽・エンタメ',
+      'エンタメ': '音楽・エンタメ',
+      'ソーシャル': 'ソーシャル',
+      'ライフスタイル': 'ライフスタイル'
+    };
+    
+    for (const [keyword, mappedCategory] of Object.entries(keywordMap)) {
+      if (category.includes(keyword)) {
+        console.log('🎨 Found keyword match:', keyword, '->', mappedCategory);
+        return categoryColors[mappedCategory];
+      }
+    }
+    
+    console.log('🎨 No match found, using default color for:', category);
+    return categoryColors['その他'];
   };
 
   // アニメーション用のタイマー
@@ -108,6 +236,13 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
 
   // 美しい糸の描画
   useEffect(() => {
+    console.log('🎨 All experiences with categories:', experiences.map(exp => ({ 
+      title: exp.title, 
+      category: exp.category,
+      type: exp.type,
+      id: exp.id
+    })));
+    
     const canvas = canvasRef.current;
     if (!canvas || experiences.length === 0) return;
 
@@ -140,19 +275,29 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
       return { x, y, experience: exp, index };
     });
 
-    // 美しいグラデーション糸を描画
+    // 美しいグラデーション糸を描画（体験別の色とアニメーション）
     for (let i = 0; i < positions.length - 1; i++) {
       const current = positions[i];
       const next = positions[i + 1];
       
-      // グラデーションの作成
-      const gradient = ctx.createLinearGradient(current.x, current.y, next.x, next.y);
+      // 各体験のカテゴリーに基づいた色を使用
       const currentColorData = getCategoryColor(current.experience.category);
       const nextColorData = getCategoryColor(next.experience.category);
       
-      gradient.addColorStop(0, currentColorData.medium);
-      gradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.4)'); // 中間は紫
-      gradient.addColorStop(1, nextColorData.medium);
+      // カテゴリーが同じ場合は単色、異なる場合はグラデーション
+      let strokeStyle;
+      if (current.experience.category === next.experience.category) {
+        // 同じカテゴリーの場合は単色で統一感を出す
+        strokeStyle = currentColorData.primary;
+      } else {
+        // 異なるカテゴリーの場合はグラデーション
+        const gradient = ctx.createLinearGradient(current.x, current.y, next.x, next.y);
+        gradient.addColorStop(0, currentColorData.primary);
+        gradient.addColorStop(0.3, currentColorData.medium);
+        gradient.addColorStop(0.7, nextColorData.medium);
+        gradient.addColorStop(1, nextColorData.primary);
+        strokeStyle = gradient;
+      }
       
       // 滑らかなベジェ曲線
       ctx.beginPath();
@@ -161,18 +306,25 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
       const distance = Math.sqrt(Math.pow(next.x - current.x, 2) + Math.pow(next.y - current.y, 2));
       const controlOffset = Math.min(distance * 0.5, 100);
       
-      const controlX1 = current.x + controlOffset * Math.cos((current.index + animationFrame * 0.01) * 0.5);
+      // カテゴリーごとに異なるアニメーションパターン
+      const categoryIndex = Object.keys(categoryColors).indexOf(current.experience.category) || 0;
+      const animationOffset = categoryIndex * 0.3 + animationFrame * 0.01;
+      
+      const controlX1 = current.x + controlOffset * Math.cos(animationOffset);
       const controlY1 = current.y + controlOffset * 0.3;
-      const controlX2 = next.x - controlOffset * Math.cos((next.index + animationFrame * 0.01) * 0.5);
+      const controlX2 = next.x - controlOffset * Math.cos(animationOffset);
       const controlY2 = next.y - controlOffset * 0.3;
       
       ctx.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, next.x, next.y);
       
-      ctx.strokeStyle = gradient;
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = current.experience.completed ? 3.5 : 2.5; // 完了した体験は太く
       ctx.lineCap = 'round';
-      ctx.shadowColor = currentColorData.light;
-      ctx.shadowBlur = 10;
+      
+      // 体験カテゴリーに応じた影の色
+      const shadowColor = `rgba(${currentColorData.rgba.r}, ${currentColorData.rgba.g}, ${currentColorData.rgba.b}, 0.25)`;
+      ctx.shadowColor = shadowColor;
+      ctx.shadowBlur = current.experience.completed ? 8 : 5;
       ctx.stroke();
       
       // 影をリセット
@@ -180,55 +332,62 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
       ctx.shadowBlur = 0;
     }
 
-    // 美しい体験ポイントを描画
+    // 美しい体験ポイントを描画（色の調整）
     positions.forEach((pos, index) => {
       const { experience } = pos;
       const colorData = getCategoryColor(experience.category);
-      const pulseSize = 2 + Math.sin(animationFrame * 0.05 + index * 0.5) * 1;
+      const pulseSize = 1 + Math.sin(animationFrame * 0.05 + index * 0.5) * 0.5;
       
-      // 外側のグロー
-      const glowGradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 20);
-      glowGradient.addColorStop(0, colorData.medium);
+      // 外側のソフトグロー
+      const glowGradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 16);
+      glowGradient.addColorStop(0, colorData.light);
       glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
       
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 20, 0, 2 * Math.PI);
+      ctx.arc(pos.x, pos.y, 16, 0, 2 * Math.PI);
       ctx.fillStyle = glowGradient;
       ctx.fill();
       
-      // メインの円
-      const mainGradient = ctx.createRadialGradient(pos.x - 2, pos.y - 2, 0, pos.x, pos.y, 10 + pulseSize);
+      // メインの円（より美しいグラデーション）
+      const mainGradient = ctx.createRadialGradient(pos.x - 1, pos.y - 1, 0, pos.x, pos.y, 8 + pulseSize);
       mainGradient.addColorStop(0, '#ffffff');
-      mainGradient.addColorStop(0.3, colorData.primary);
+      mainGradient.addColorStop(0.4, colorData.primary);
       mainGradient.addColorStop(1, colorData.dark);
       
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 8 + pulseSize, 0, 2 * Math.PI);
+      ctx.arc(pos.x, pos.y, 7 + pulseSize, 0, 2 * Math.PI);
       ctx.fillStyle = mainGradient;
       ctx.fill();
+      
+      // 外枠を追加（より鮮明に）
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 7 + pulseSize, 0, 2 * Math.PI);
+      ctx.strokeStyle = colorData.primary;
+      ctx.lineWidth = 1;
+      ctx.stroke();
       
       // 完了マーク
       if (experience.completed) {
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 4, 0, 2 * Math.PI);
+        ctx.arc(pos.x, pos.y, 3.5, 0, 2 * Math.PI);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
         
         // チェックマーク
         ctx.beginPath();
-        ctx.moveTo(pos.x - 2, pos.y);
-        ctx.lineTo(pos.x - 1, pos.y + 1);
-        ctx.lineTo(pos.x + 2, pos.y - 2);
+        ctx.moveTo(pos.x - 1.5, pos.y);
+        ctx.lineTo(pos.x - 0.5, pos.y + 1);
+        ctx.lineTo(pos.x + 1.5, pos.y - 1.5);
         ctx.strokeStyle = colorData.primary;
         ctx.lineWidth = 1.5;
         ctx.lineCap = 'round';
         ctx.stroke();
       }
       
-      // レベル表示
+      // レベル表示（位置とサイズを調整）
       for (let i = 0; i < (experience.level || 1); i++) {
         ctx.beginPath();
-        ctx.arc(pos.x - 15 + i * 4, pos.y + 15, 1.5, 0, 2 * Math.PI);
+        ctx.arc(pos.x - 12 + i * 3, pos.y + 12, 1.2, 0, 2 * Math.PI);
         ctx.fillStyle = colorData.primary;
         ctx.fill();
       }
