@@ -7,10 +7,9 @@ const idToColor = (id) => {
   for (let i = 0; i < strId.length; i++) {
     hash = strId.charCodeAt(i) + ((hash << 5) - hash);
   }
-  // 色相を0-359の範囲で均等に分布させる
-  const hue = Math.abs(hash * 137.508) % 360; // ゴールデンアングルを利用して色相を分散
-  const saturation = 70 + (Math.abs(hash) % 20); // 彩度を70-89の範囲で決定
-  const lightness = 50 + (Math.abs(hash) % 10); // 明度を50-59の範囲で決定
+  const hue = Math.abs(hash * 137.508) % 360;
+  const saturation = 70 + (Math.abs(hash) % 20);
+  const lightness = 50 + (Math.abs(hash) % 10);
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
 
@@ -23,7 +22,6 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
 
   console.log('ExperienceStrings rendering with:', experiences);
   
-  // データの安全性チェック
   if (!experiences || !Array.isArray(experiences)) {
     return (
       <div className="px-4 py-8">
@@ -40,7 +38,6 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     );
   }
 
-  // アニメーション用のタイマー
   useEffect(() => {
     const interval = setInterval(() => {
       setAnimationFrame(prev => prev + 1);
@@ -48,24 +45,49 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     return () => clearInterval(interval);
   }, []);
 
+  // 芸術的な螺旋パスを生成
+  const generateArtisticPaths = (width, height) => {
+    const paths = [];
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const baseRadius = Math.min(width, height) * 0.25;
+    
+    // 完了した体験のみをフィルタリング
+    const completedExperiences = experiences.filter(exp => exp.completed);
+    
+    completedExperiences.forEach((exp, index) => {
+      const angle = (index / completedExperiences.length) * Math.PI * 2;
+      const spiralFactor = index * 0.15;
+      const radius = baseRadius * (1 + spiralFactor * 0.1);
+      
+      // 螺旋状の座標計算（アニメーション付き）
+      const animOffset = animationFrame * 0.005;
+      const x = centerX + Math.cos(angle + animOffset) * radius;
+      const y = centerY + Math.sin(angle + animOffset) * radius - index * 15;
+      
+      paths.push({
+        x, y,
+        exp,
+        color: idToColor(exp.id),
+        angle,
+        radius,
+        index
+      });
+    });
+    
+    return paths;
+  };
+
   // 美しい糸の描画
   useEffect(() => {
-    console.log('🎨 All experiences with categories:', experiences.map(exp => ({ 
-      title: exp.title, 
-      category: exp.category,
-      type: exp.type,
-      id: exp.id
-    })));
-    
     const canvas = canvasRef.current;
     if (!canvas || experiences.length === 0) return;
 
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     const width = rect.width || 400;
-    const height = Math.max(400, experiences.length * 100 + 100); // 縦方向のスペースを確保
+    const height = 500;
     
-    // 高DPI対応
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -73,96 +95,120 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     canvas.style.height = height + 'px';
     ctx.scale(dpr, dpr);
     
-    // キャンバスをクリア
-    ctx.clearRect(0, 0, width, height);
+    // 背景のグラデーション
+    const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+    bgGradient.addColorStop(0, 'rgba(237, 233, 254, 0.3)');
+    bgGradient.addColorStop(0.5, 'rgba(251, 207, 232, 0.2)');
+    bgGradient.addColorStop(1, 'rgba(219, 234, 254, 0.3)');
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, width, height);
 
-    // 体験の位置を美しく配置
-    const centerX = width / 2;
-    const positions = experiences.map((exp, index) => {
-      const angle = (index / experiences.length) * Math.PI * 2;
-      const radius = Math.min(width, height) * 0.15;
-      const spiralFactor = index * 20;
-      
-      const x = centerX + Math.cos(angle) * (radius + spiralFactor * 0.5) + Math.sin(animationFrame * 0.02 + index) * 5;
-      const y = 80 + index * 100 + Math.cos(animationFrame * 0.03 + index) * 3; // y座標を統一
-      
-      return { x, y, experience: exp, index };
-    });
+    // パスを生成
+    const paths = generateArtisticPaths(width, height);
 
-    // 美しい単一色の糸を描画（体験別の色とアニメーション）
-    for (let i = 0; i < positions.length - 1; i++) {
-      const current = positions[i];
-      const next = positions[i + 1];
+    // 糸を描画（後ろから前へ）
+    for (let i = 0; i < paths.length - 1; i++) {
+      const current = paths[i];
+      const next = paths[i + 1];
       
-      // 完了したミッションの間にのみ糸を描画
-      if (current.experience.completed && next.experience.completed) {
-        // 各体験のIDに基づいた単一色を使用
-        const currentColor = idToColor(current.experience.id);
-        
-        // 滑らかなベジェ曲線
-        ctx.beginPath();
-        ctx.moveTo(current.x, current.y);
-        
-        const distance = Math.sqrt(Math.pow(next.x - current.x, 2) + Math.pow(next.y - current.y, 2));
-        const controlOffset = Math.min(distance * 0.5, 100);
-        
-        // アニメーションパターン
-        const animationOffset = current.experience.id * 0.3 + animationFrame * 0.01;
-        
-        const controlX1 = current.x + controlOffset * Math.cos(animationOffset);
-        const controlY1 = current.y + controlOffset * 0.3;
-        const controlX2 = next.x - controlOffset * Math.cos(animationOffset);
-        const controlY2 = next.y - controlOffset * 0.3;
-        
-        ctx.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, next.x, next.y);
-        
-        ctx.strokeStyle = currentColor;
-        ctx.lineWidth = 3.5; // 完了した体験の糸は太く
-        ctx.lineCap = 'round';
-        
-        // 体験に応じた影の色
-        const shadowColor = `${currentColor}40`; // 40は透明度
-        ctx.shadowColor = shadowColor;
-        ctx.shadowBlur = 8;
-        ctx.stroke();
-        
-        // 影をリセット
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-      }
-    }
-
-    // 美しい体験ポイントを描画（色の調整）
-    positions.forEach((pos, index) => {
-      const { experience } = pos;
-      const experienceColor = idToColor(experience.id);
-      const pulseSize = 1 + Math.sin(animationFrame * 0.05 + index * 0.5) * 0.5;
+      // グラデーションの作成
+      const gradient = ctx.createLinearGradient(current.x, current.y, next.x, next.y);
+      // 117行目付近の色生成コードを確認
+      const baseHue = Math.abs(current.exp.id * 137.508) % 360;
+      const hueStep = 10;
+      const hue = (baseHue + i * hueStep) % 360;
+      const color = `hsl(${hue}, 79%, 59%)`; // 'dd'が付加されないように修正
       
-      // 外側のソフトグロー
-      const glowColor = `${experienceColor}26`; // 15% 透明度
+      // gradientの設定
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(1, `hsl(${hue}, 79%, 39%)`);
+      
+      // 複雑なベジェ曲線で糸を描画
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 16, 0, 2 * Math.PI);
-      ctx.fillStyle = glowColor;
-      ctx.fill();
+      ctx.moveTo(current.x, current.y);
       
-      // メインの円（単一色）
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 7 + pulseSize, 0, 2 * Math.PI);
-      ctx.fillStyle = experienceColor;
-      ctx.fill();
+      // アニメーションによる曲線の変化
+      const waveOffset = Math.sin(animationFrame * 0.01 + i * 0.5) * 30;
+      const controlOffset = Math.cos(animationFrame * 0.008 + i * 0.3) * 40;
       
-      // 外枠を追加（より鮮明に）
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 7 + pulseSize, 0, 2 * Math.PI);
-      ctx.strokeStyle = experienceColor;
-      ctx.lineWidth = 1;
+      const midX = (current.x + next.x) / 2;
+      const midY = (current.y + next.y) / 2;
+      
+      // 3次ベジェ曲線で滑らかな糸を表現
+      ctx.bezierCurveTo(
+        current.x + controlOffset, current.y + waveOffset,
+        next.x - controlOffset, next.y - waveOffset,
+        next.x, next.y
+      );
+      
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 3 + Math.sin(animationFrame * 0.02 + i) * 1;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      // 影効果
+      ctx.shadowColor = current.color;
+      ctx.shadowBlur = 10 + Math.sin(animationFrame * 0.03 + i) * 5;
       ctx.stroke();
       
+      // 追加の光の筋
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+    }
+
+    // ノード（体験ポイント）を描画
+    paths.forEach((path, index) => {
+      const pulseSize = 1 + Math.sin(animationFrame * 0.05 + index * 0.5) * 0.3;
+      const nodeSize = 8 + pulseSize * 2;
+      
+      // グロー効果の色を正しく設定
+      const glowGradient = ctx.createRadialGradient(path.x, path.y, 0, path.x, path.y, nodeSize * 3);
+      // HSL色をRGBA形式に変換するか、正しい形式で透明度を設定
+      const pathColorRgba = convertHslToRgba(path.color, 0.27); // 44をアルファ値0.27に変換
+      const pathColorRgba2 = convertHslToRgba(path.color, 0.13); // 22をアルファ値0.13に変換
+      
+      glowGradient.addColorStop(0, pathColorRgba);
+      glowGradient.addColorStop(0.5, pathColorRgba2);
+      glowGradient.addColorStop(1, 'transparent');
+      ctx.fillStyle = glowGradient;
+      ctx.fillRect(path.x - nodeSize * 3, path.y - nodeSize * 3, nodeSize * 6, nodeSize * 6);
+      
+      // メインノード
+      const nodeGradient = ctx.createRadialGradient(
+        path.x - nodeSize / 3, path.y - nodeSize / 3, 0,
+        path.x, path.y, nodeSize
+      );
+      nodeGradient.addColorStop(0, 'white');
+      nodeGradient.addColorStop(0.5, path.color);
+      // HSL色値の場合は透明度を正しく設定
+      const colorWithAlpha = path.color.replace('hsl(', 'hsla(').replace(')', ', 0.87)');
+      nodeGradient.addColorStop(1, colorWithAlpha);
+      
+      ctx.beginPath();
+      ctx.arc(path.x, path.y, nodeSize, 0, Math.PI * 2);
+      ctx.fillStyle = nodeGradient;
+      ctx.fill();
+      
+      // 輪郭
+      ctx.strokeStyle = path.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // 内側の光
+      ctx.beginPath();
+      ctx.arc(path.x - nodeSize / 3, path.y - nodeSize / 3, nodeSize / 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.fill();
     });
 
   }, [experiences, animationFrame]);
 
-  // マウス移動ハンドラー
   const handleMouseMove = (e) => {
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -173,7 +219,6 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     }
   };
 
-  // キャンバスクリックハンドラー
   const handleCanvasClick = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -182,25 +227,15 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
 
-    // クリックされた体験を探す
-    // 逆順にループすることで、手前にある要素が優先的にクリックされるようにする
-    for (let i = experiences.length - 1; i >= 0; i--) {
-      const exp = experiences[i];
-      const centerX = rect.width / 2;
-      const angle = (i / experiences.length) * Math.PI * 2;
-      const radius = Math.min(rect.width, rect.height) * 0.15;
-      const spiralFactor = i * 20;
+    const paths = generateArtisticPaths(rect.width, rect.height);
+    
+    for (let i = paths.length - 1; i >= 0; i--) {
+      const path = paths[i];
+      const distance = Math.sqrt(Math.pow(clickX - path.x, 2) + Math.pow(clickY - path.y, 2));
 
-      const x = centerX + Math.cos(angle) * (radius + spiralFactor * 0.5);
-      const y = 80 + i * 100; // y座標を統一
-
-      const distance = Math.sqrt(Math.pow(clickX - x, 2) + Math.pow(clickY - y, 2));
-
-      // クリックが円の範囲内にあるか、または糸の近くにあるかを判定
-      // 糸のクリック判定は、その糸が接続している円のクリックとして処理する
-      if (distance < 15 && onExperienceClick) { // 15は円の半径の許容範囲
-        onExperienceClick(exp);
-        return; // クリック処理を終了
+      if (distance < 15 && onExperienceClick) {
+        onExperienceClick(path.exp);
+        return;
       }
     }
   };
@@ -210,7 +245,7 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
       <div className="px-4" ref={containerRef}>
         
         {/* 美しいキャンバス部分 */}
-        <div className="relative mb-8 bg-gradient-to-br from-purple-50/80 via-pink-50/60 to-blue-50/80 rounded-3xl shadow-lg backdrop-blur-sm border border-white/20">
+        <div className="relative mb-8 bg-white rounded-3xl shadow-2xl overflow-hidden">
           <canvas
             ref={canvasRef}
             className="w-full h-auto rounded-2xl"
@@ -219,10 +254,28 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
             style={{ 
               display: 'block', 
               cursor: 'pointer',
-              height: '400px', 
-              backgroundColor: 'white' 
+              height: '500px'
             }}
           />
+          
+          {/* 統計オーバーレイ */}
+          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-lg rounded-2xl p-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="text-center">
+                <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  {experiences.length}
+                </p>
+                <p className="text-xs text-gray-600">体験数</p>
+              </div>
+              <div className="w-px h-10 bg-gray-200" />
+              <div className="text-center">
+                <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                  {new Set(experiences.map(e => e.category)).size}
+                </p>
+                <p className="text-xs text-gray-600">カテゴリ</p>
+              </div>
+            </div>
+          </div>
           
           {/* ホバー時の詳細表示 */}
           {hoveredExperience && (
@@ -337,3 +390,34 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
 };
 
 export default ExperienceStrings;
+
+// HSL色をRGBA形式に変換するヘルパー関数を追加
+const convertHslToRgba = (hslColor, alpha) => {
+  // HSL文字列から数値を抽出
+  const match = hslColor.match(/hsl\((\d+(?:\.\d+)?),\s*(\d+)%,\s*(\d+)%\)/);
+  if (!match) return `rgba(128, 128, 128, ${alpha})`; // フォールバック
+  
+  const [, h, s, l] = match;
+  const hue = parseFloat(h) / 360;
+  const saturation = parseFloat(s) / 100;
+  const lightness = parseFloat(l) / 100;
+  
+  // HSLからRGBに変換
+  const c = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const x = c * (1 - Math.abs((hue * 6) % 2 - 1));
+  const m = lightness - c / 2;
+  
+  let r, g, b;
+  if (hue < 1/6) { r = c; g = x; b = 0; }
+  else if (hue < 2/6) { r = x; g = c; b = 0; }
+  else if (hue < 3/6) { r = 0; g = c; b = x; }
+  else if (hue < 4/6) { r = 0; g = x; b = c; }
+  else if (hue < 5/6) { r = x; g = 0; b = c; }
+  else { r = c; g = 0; b = x; }
+  
+  const red = Math.round((r + m) * 255);
+  const green = Math.round((g + m) * 255);
+  const blue = Math.round((b + m) * 255);
+  
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+};

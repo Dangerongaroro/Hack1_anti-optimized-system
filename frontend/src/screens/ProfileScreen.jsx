@@ -1,8 +1,59 @@
 // frontend/src/screens/ProfileScreen.jsx
-import React from 'react';
-import { ChevronRight } from 'lucide-react'; // このコンポーネントで使うアイコンをインポート
+import React, { useState } from 'react';
+import { ChevronRight, Bell, Shield, Settings, Download } from 'lucide-react';
 
-const ProfileScreen = ({ userStats }) => {
+const ProfileScreen = ({ userStats, onResetOnboarding }) => {
+  const [showPrivacySettings, setShowPrivacySettings] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [privacySettings, setPrivacySettings] = useState({
+    shareData: false,
+    analytics: true,
+    personalizedAds: false
+  });
+  const [notificationSettings, setNotificationSettings] = useState({
+    dailyChallenge: true,
+    achievements: true,
+    weeklyReport: false
+  });
+
+  const handleExportData = () => {
+    const data = {
+      experiences: JSON.parse(localStorage.getItem('experiences') || '[]'),
+      preferences: JSON.parse(localStorage.getItem('userPreferences') || '{}'),
+      stats: userStats,
+      exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `seren-paths-data-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleResetOnboarding = () => {
+    if (confirm('初回アンケートをやり直しますか？現在の設定は失われます。')) {
+      localStorage.removeItem('userPreferences');
+      if (onResetOnboarding) {
+        onResetOnboarding();
+      }
+    }
+  };
+
+  const handlePrivacyToggle = (key) => {
+    setPrivacySettings(prev => ({ ...prev, [key]: !prev[key] }));
+    // ここで実際の設定保存処理を行う
+    localStorage.setItem('privacySettings', JSON.stringify({ ...privacySettings, [key]: !privacySettings[key] }));
+  };
+
+  const handleNotificationToggle = (key) => {
+    setNotificationSettings(prev => ({ ...prev, [key]: !prev[key] }));
+    // ここで実際の設定保存処理を行う
+    localStorage.setItem('notificationSettings', JSON.stringify({ ...notificationSettings, [key]: !notificationSettings[key] }));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-6">
       <div className="mb-8">
@@ -11,7 +62,7 @@ const ProfileScreen = ({ userStats }) => {
 
       <div className="bg-white/60 backdrop-blur rounded-3xl p-6 mb-6">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+          <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
             A
           </div>
           <div>
@@ -48,20 +99,152 @@ const ProfileScreen = ({ userStats }) => {
       </div>
 
       <div className="space-y-4">
-        <button className="w-full bg-white/60 backdrop-blur rounded-2xl p-4 flex items-center justify-between hover:bg-white/80 transition-colors">
-          <span className="font-medium text-gray-800">通知設定</span>
+        {/* 通知設定 */}
+        <div className="bg-white/60 backdrop-blur rounded-2xl overflow-hidden">
+          <button
+            onClick={() => setShowNotificationSettings(!showNotificationSettings)}
+            className="w-full p-4 flex items-center justify-between hover:bg-white/80 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Bell className="w-5 h-5 text-gray-600" />
+              <span className="font-medium text-gray-800">通知設定</span>
+            </div>
+            <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${showNotificationSettings ? 'rotate-90' : ''}`} />
+          </button>
+          
+          {showNotificationSettings && (
+            <div className="border-t border-gray-200/50 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">毎日のチャレンジ通知</span>
+                <button
+                  onClick={() => handleNotificationToggle('dailyChallenge')}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${
+                    notificationSettings.dailyChallenge ? 'bg-purple-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                    notificationSettings.dailyChallenge ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">アチーブメント獲得通知</span>
+                <button
+                  onClick={() => handleNotificationToggle('achievements')}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${
+                    notificationSettings.achievements ? 'bg-purple-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                    notificationSettings.achievements ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">週間レポート</span>
+                <button
+                  onClick={() => handleNotificationToggle('weeklyReport')}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${
+                    notificationSettings.weeklyReport ? 'bg-purple-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                    notificationSettings.weeklyReport ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* プライバシー設定 */}
+        <div className="bg-white/60 backdrop-blur rounded-2xl overflow-hidden">
+          <button
+            onClick={() => setShowPrivacySettings(!showPrivacySettings)}
+            className="w-full p-4 flex items-center justify-between hover:bg-white/80 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Shield className="w-5 h-5 text-gray-600" />
+              <span className="font-medium text-gray-800">プライバシー設定</span>
+            </div>
+            <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${showPrivacySettings ? 'rotate-90' : ''}`} />
+          </button>
+          
+          {showPrivacySettings && (
+            <div className="border-t border-gray-200/50 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">データの共有</span>
+                <button
+                  onClick={() => handlePrivacyToggle('shareData')}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${
+                    privacySettings.shareData ? 'bg-purple-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                    privacySettings.shareData ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">利用状況の分析</span>
+                <button
+                  onClick={() => handlePrivacyToggle('analytics')}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${
+                    privacySettings.analytics ? 'bg-purple-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                    privacySettings.analytics ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">パーソナライズド広告</span>
+                <button
+                  onClick={() => handlePrivacyToggle('personalizedAds')}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${
+                    privacySettings.personalizedAds ? 'bg-purple-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                    privacySettings.personalizedAds ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 初回アンケートを再設定 */}
+        <button
+          onClick={handleResetOnboarding}
+          className="w-full bg-white/60 backdrop-blur rounded-2xl p-4 flex items-center justify-between hover:bg-white/80 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Settings className="w-5 h-5 text-gray-600" />
+            <span className="font-medium text-gray-800">初回アンケートを再設定</span>
+          </div>
           <ChevronRight className="w-5 h-5 text-gray-400" />
         </button>
-        <button className="w-full bg-white/60 backdrop-blur rounded-2xl p-4 flex items-center justify-between hover:bg-white/80 transition-colors">
-          <span className="font-medium text-gray-800">プライバシー設定</span>
-          <ChevronRight className="w-5 h-5 text-gray-400" />
-        </button>
-        <button className="w-full bg-white/60 backdrop-blur rounded-2xl p-4 flex items-center justify-between hover:bg-white/80 transition-colors">
-          <span className="font-medium text-gray-800">初回アンケートを再設定</span>
+
+        {/* データエクスポート */}
+        <button
+          onClick={handleExportData}
+          className="w-full bg-white/60 backdrop-blur rounded-2xl p-4 flex items-center justify-between hover:bg-white/80 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Download className="w-5 h-5 text-gray-600" />
+            <span className="font-medium text-gray-800">データをエクスポート</span>
+          </div>
           <ChevronRight className="w-5 h-5 text-gray-400" />
         </button>
       </div>
     </div>
   );
 };
+
 export default ProfileScreen;
