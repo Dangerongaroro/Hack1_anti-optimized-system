@@ -75,6 +75,9 @@ logs/
 .env.test.local
 .env.production.local
 
+# masahiro_env
+masahiro_env/
+
 # Temporary files
 *.tmp
 *.temp

@@ -2,7 +2,7 @@ import React from 'react';
 import { X, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
 
 // 体験詳細モーダル
-const ExperienceDetailModal = ({ experience, onClose, onFeedback }) => {
+const ExperienceDetailModal = ({ experience, onClose, onFeedback, onClearMission }) => {
   if (!experience) return null;
 
   return (
@@ -38,6 +38,17 @@ const ExperienceDetailModal = ({ experience, onClose, onFeedback }) => {
             })}
           </p>
           
+          {!experience.completed && (
+            <div className="border-t pt-4">
+              <button
+                onClick={() => onClearMission(experience.id)}
+                className="w-full py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+              >
+                ミッションをクリア
+              </button>
+            </div>
+          )}
+
           {experience.completed && !experience.feedback && (
             <div className="border-t pt-4">
               <p className="text-sm text-gray-700 mb-3">この体験はどうでしたか？</p>
