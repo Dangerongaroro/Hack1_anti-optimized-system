@@ -23,14 +23,6 @@ const NavigationBar = ({ currentScreen, setCurrentScreen, onNavigateToRecommenda
           <Compass className="w-6 h-6" />
         </button>
         <button
-          onClick={() => setCurrentScreen('journal')}
-          className={`p-3 rounded-xl transition-colors ${
-            currentScreen === 'journal' || currentScreen === 'journal-entry' ? 'bg-purple-100 text-purple-600' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <BookOpen className="w-6 h-6" />
-        </button>
-        <button
           onClick={() => setCurrentScreen('profile')}
           className={`p-3 rounded-xl transition-colors ${
             currentScreen === 'profile' ? 'bg-purple-100 text-purple-600' : 'text-gray-400 hover:text-gray-600'
