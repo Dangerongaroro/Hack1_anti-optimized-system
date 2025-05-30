@@ -152,7 +152,7 @@ const App = () => {
         onFeedback={handleExperienceFeedback}
       />
 
-      {!['journal-entry', 'recommendation'].includes(currentScreen) && ( // recommendation画面でもNavBar非表示
+      {!['journal-entry'].includes(currentScreen) && ( // recommendation画面でもNavBar非表示
         <NavigationBar
           currentScreen={currentScreen}
           setCurrentScreen={setCurrentScreen}
