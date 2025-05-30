@@ -1,6 +1,19 @@
 // frontend/src/components/ExperienceStrings.jsx
 import React, { useState, useEffect, useRef } from 'react';
 
+const idToColor = (id) => {
+  let hash = 0;
+  const strId = String(id);
+  for (let i = 0; i < strId.length; i++) {
+    hash = strId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  // 色相を0-359の範囲で均等に分布させる
+  const hue = Math.abs(hash * 137.508) % 360; // ゴールデンアングルを利用して色相を分散
+  const saturation = 70 + (Math.abs(hash) % 20); // 彩度を70-89の範囲で決定
+  const lightness = 50 + (Math.abs(hash) % 10); // 明度を50-59の範囲で決定
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
+
 const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -27,205 +40,6 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     );
   }
 
-  // カテゴリー別のカラーマッピング（より多くのパターンに対応）
-  const categoryColors = {
-    'アート・創作': {
-      primary: '#8B5CF6',
-      rgba: { r: 139, g: 92, b: 246 },
-      light: 'rgba(139, 92, 246, 0.15)',
-      medium: 'rgba(139, 92, 246, 0.5)',
-      dark: 'rgba(139, 92, 246, 0.9)'
-    },
-    '料理・グルメ': {
-      primary: '#F97316',
-      rgba: { r: 249, g: 115, b: 22 },
-      light: 'rgba(249, 115, 22, 0.15)',
-      medium: 'rgba(249, 115, 22, 0.5)',
-      dark: 'rgba(249, 115, 22, 0.9)'
-    },
-    '自然・アウトドア': {
-      primary: '#22C55E',
-      rgba: { r: 34, g: 197, b: 94 },
-      light: 'rgba(34, 197, 94, 0.15)',
-      medium: 'rgba(34, 197, 94, 0.5)',
-      dark: 'rgba(34, 197, 94, 0.9)'
-    },
-    'スポーツ・運動': {
-      primary: '#F59E0B',
-      rgba: { r: 245, g: 158, b: 11 },
-      light: 'rgba(245, 158, 11, 0.15)',
-      medium: 'rgba(245, 158, 11, 0.5)',
-      dark: 'rgba(245, 158, 11, 0.9)'
-    },
-    '学習・読書': {
-      primary: '#3B82F6',
-      rgba: { r: 59, g: 130, b: 246 },
-      light: 'rgba(59, 130, 246, 0.15)',
-      medium: 'rgba(59, 130, 246, 0.5)',
-      dark: 'rgba(59, 130, 246, 0.9)'
-    },
-    '音楽・エンタメ': {
-      primary: '#EC4899',
-      rgba: { r: 236, g: 72, b: 153 },
-      light: 'rgba(236, 72, 153, 0.15)',
-      medium: 'rgba(236, 72, 153, 0.5)',
-      dark: 'rgba(236, 72, 153, 0.9)'
-    },
-    'ソーシャル': {
-      primary: '#06B6D4',
-      rgba: { r: 6, g: 182, b: 212 },
-      light: 'rgba(6, 182, 212, 0.15)',
-      medium: 'rgba(6, 182, 212, 0.5)',
-      dark: 'rgba(6, 182, 212, 0.9)'
-    },
-    'ライフスタイル': {
-      primary: '#84CC16',
-      rgba: { r: 132, g: 204, b: 22 },
-      light: 'rgba(132, 204, 22, 0.15)',
-      medium: 'rgba(132, 204, 22, 0.5)',
-      dark: 'rgba(132, 204, 22, 0.9)'
-    },
-    // よくあるカテゴリーの別名・英語名も追加
-    'challenge': {
-      primary: '#8B5CF6',
-      rgba: { r: 139, g: 92, b: 246 },
-      light: 'rgba(139, 92, 246, 0.15)',
-      medium: 'rgba(139, 92, 246, 0.5)',
-      dark: 'rgba(139, 92, 246, 0.9)'
-    },
-    'journal': {
-      primary: '#EC4899',
-      rgba: { r: 236, g: 72, b: 153 },
-      light: 'rgba(236, 72, 153, 0.15)',
-      medium: 'rgba(236, 72, 153, 0.5)',
-      dark: 'rgba(236, 72, 153, 0.9)'
-    },
-    'art': {
-      primary: '#8B5CF6',
-      rgba: { r: 139, g: 92, b: 246 },
-      light: 'rgba(139, 92, 246, 0.15)',
-      medium: 'rgba(139, 92, 246, 0.5)',
-      dark: 'rgba(139, 92, 246, 0.9)'
-    },
-    'food': {
-      primary: '#F97316',
-      rgba: { r: 249, g: 115, b: 22 },
-      light: 'rgba(249, 115, 22, 0.15)',
-      medium: 'rgba(249, 115, 22, 0.5)',
-      dark: 'rgba(249, 115, 22, 0.9)'
-    },
-    'nature': {
-      primary: '#22C55E',
-      rgba: { r: 34, g: 197, b: 94 },
-      light: 'rgba(34, 197, 94, 0.15)',
-      medium: 'rgba(34, 197, 94, 0.5)',
-      dark: 'rgba(34, 197, 94, 0.9)'
-    },
-    'sport': {
-      primary: '#F59E0B',
-      rgba: { r: 245, g: 158, b: 11 },
-      light: 'rgba(245, 158, 11, 0.15)',
-      medium: 'rgba(245, 158, 11, 0.5)',
-      dark: 'rgba(245, 158, 11, 0.9)'
-    },
-    'study': {
-      primary: '#3B82F6',
-      rgba: { r: 59, g: 130, b: 246 },
-      light: 'rgba(59, 130, 246, 0.15)',
-      medium: 'rgba(59, 130, 246, 0.5)',
-      dark: 'rgba(59, 130, 246, 0.9)'
-    },
-    'music': {
-      primary: '#EC4899',
-      rgba: { r: 236, g: 72, b: 153 },
-      light: 'rgba(236, 72, 153, 0.15)',
-      medium: 'rgba(236, 72, 153, 0.5)',
-      dark: 'rgba(236, 72, 153, 0.9)'
-    },
-    'social': {
-      primary: '#06B6D4',
-      rgba: { r: 6, g: 182, b: 212 },
-      light: 'rgba(6, 182, 212, 0.15)',
-      medium: 'rgba(6, 182, 212, 0.5)',
-      dark: 'rgba(6, 182, 212, 0.9)'
-    },
-    'lifestyle': {
-      primary: '#84CC16',
-      rgba: { r: 132, g: 204, b: 22 },
-      light: 'rgba(132, 204, 22, 0.15)',
-      medium: 'rgba(132, 204, 22, 0.5)',
-      dark: 'rgba(132, 204, 22, 0.9)'
-    },
-    // タイプ別のカテゴリーも追加
-    'experience': {
-      primary: '#8B5CF6',
-      rgba: { r: 139, g: 92, b: 246 },
-      light: 'rgba(139, 92, 246, 0.15)',
-      medium: 'rgba(139, 92, 246, 0.5)',
-      dark: 'rgba(139, 92, 246, 0.9)'
-    },
-    'その他': {
-      primary: '#10B981', // 灰色から鮮やかな緑色に変更
-      rgba: { r: 16, g: 185, b: 129 },
-      light: 'rgba(16, 185, 129, 0.15)',
-      medium: 'rgba(16, 185, 129, 0.5)',
-      dark: 'rgba(16, 185, 129, 0.9)'
-    }
-  };
-
-  const getCategoryColor = (category) => {
-    console.log('🎨 Category color request:', category, 'Available categories:', Object.keys(categoryColors));
-    
-    // undefined や null の場合は即座にデフォルトを返す
-    if (!category) {
-      console.log('🎨 No category provided, using default');
-      return categoryColors['その他'];
-    }
-    
-    // 完全一致を試す
-    if (categoryColors[category]) {
-      console.log('🎨 Found exact match for:', category);
-      return categoryColors[category];
-    }
-    
-    // 部分一致を試す（大文字小文字を無視）
-    const lowerCategory = category.toLowerCase();
-    for (const [key, value] of Object.entries(categoryColors)) {
-      if (key.toLowerCase().includes(lowerCategory) || lowerCategory.includes(key.toLowerCase())) {
-        console.log('🎨 Found partial match:', key, 'for:', category);
-        return value;
-      }
-    }
-    
-    // キーワードマッチングも試す
-    const keywordMap = {
-      'アート': 'アート・創作',
-      '創作': 'アート・創作',
-      '料理': '料理・グルメ',
-      'グルメ': '料理・グルメ',
-      '自然': '自然・アウトドア',
-      'アウトドア': '自然・アウトドア',
-      'スポーツ': 'スポーツ・運動',
-      '運動': 'スポーツ・運動',
-      '学習': '学習・読書',
-      '読書': '学習・読書',
-      '音楽': '音楽・エンタメ',
-      'エンタメ': '音楽・エンタメ',
-      'ソーシャル': 'ソーシャル',
-      'ライフスタイル': 'ライフスタイル'
-    };
-    
-    for (const [keyword, mappedCategory] of Object.entries(keywordMap)) {
-      if (category.includes(keyword)) {
-        console.log('🎨 Found keyword match:', keyword, '->', mappedCategory);
-        return categoryColors[mappedCategory];
-      }
-    }
-    
-    console.log('🎨 No match found, using default color for:', category);
-    return categoryColors['その他'];
-  };
-
   // アニメーション用のタイマー
   useEffect(() => {
     const interval = setInterval(() => {
@@ -249,7 +63,7 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     const width = rect.width || 400;
-    const height = Math.max(400, experiences.length * 80 + 100);
+    const height = Math.max(400, experiences.length * 100 + 100); // 縦方向のスペースを確保
     
     // 高DPI対応
     const dpr = window.devicePixelRatio || 1;
@@ -270,127 +84,80 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
       const spiralFactor = index * 20;
       
       const x = centerX + Math.cos(angle) * (radius + spiralFactor * 0.5) + Math.sin(animationFrame * 0.02 + index) * 5;
-      const y = 80 + index * 60 + Math.cos(animationFrame * 0.03 + index) * 3;
+      const y = 80 + index * 100 + Math.cos(animationFrame * 0.03 + index) * 3; // y座標を統一
       
       return { x, y, experience: exp, index };
     });
 
-    // 美しいグラデーション糸を描画（体験別の色とアニメーション）
+    // 美しい単一色の糸を描画（体験別の色とアニメーション）
     for (let i = 0; i < positions.length - 1; i++) {
       const current = positions[i];
       const next = positions[i + 1];
       
-      // 各体験のカテゴリーに基づいた色を使用
-      const currentColorData = getCategoryColor(current.experience.category);
-      const nextColorData = getCategoryColor(next.experience.category);
-      
-      // カテゴリーが同じ場合は単色、異なる場合はグラデーション
-      let strokeStyle;
-      if (current.experience.category === next.experience.category) {
-        // 同じカテゴリーの場合は単色で統一感を出す
-        strokeStyle = currentColorData.primary;
-      } else {
-        // 異なるカテゴリーの場合はグラデーション
-        const gradient = ctx.createLinearGradient(current.x, current.y, next.x, next.y);
-        gradient.addColorStop(0, currentColorData.primary);
-        gradient.addColorStop(0.3, currentColorData.medium);
-        gradient.addColorStop(0.7, nextColorData.medium);
-        gradient.addColorStop(1, nextColorData.primary);
-        strokeStyle = gradient;
+      // 完了したミッションの間にのみ糸を描画
+      if (current.experience.completed && next.experience.completed) {
+        // 各体験のIDに基づいた単一色を使用
+        const currentColor = idToColor(current.experience.id);
+        
+        // 滑らかなベジェ曲線
+        ctx.beginPath();
+        ctx.moveTo(current.x, current.y);
+        
+        const distance = Math.sqrt(Math.pow(next.x - current.x, 2) + Math.pow(next.y - current.y, 2));
+        const controlOffset = Math.min(distance * 0.5, 100);
+        
+        // アニメーションパターン
+        const animationOffset = current.experience.id * 0.3 + animationFrame * 0.01;
+        
+        const controlX1 = current.x + controlOffset * Math.cos(animationOffset);
+        const controlY1 = current.y + controlOffset * 0.3;
+        const controlX2 = next.x - controlOffset * Math.cos(animationOffset);
+        const controlY2 = next.y - controlOffset * 0.3;
+        
+        ctx.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, next.x, next.y);
+        
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = 3.5; // 完了した体験の糸は太く
+        ctx.lineCap = 'round';
+        
+        // 体験に応じた影の色
+        const shadowColor = `${currentColor}40`; // 40は透明度
+        ctx.shadowColor = shadowColor;
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+        
+        // 影をリセット
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
       }
-      
-      // 滑らかなベジェ曲線
-      ctx.beginPath();
-      ctx.moveTo(current.x, current.y);
-      
-      const distance = Math.sqrt(Math.pow(next.x - current.x, 2) + Math.pow(next.y - current.y, 2));
-      const controlOffset = Math.min(distance * 0.5, 100);
-      
-      // カテゴリーごとに異なるアニメーションパターン
-      const categoryIndex = Object.keys(categoryColors).indexOf(current.experience.category) || 0;
-      const animationOffset = categoryIndex * 0.3 + animationFrame * 0.01;
-      
-      const controlX1 = current.x + controlOffset * Math.cos(animationOffset);
-      const controlY1 = current.y + controlOffset * 0.3;
-      const controlX2 = next.x - controlOffset * Math.cos(animationOffset);
-      const controlY2 = next.y - controlOffset * 0.3;
-      
-      ctx.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, next.x, next.y);
-      
-      ctx.strokeStyle = strokeStyle;
-      ctx.lineWidth = current.experience.completed ? 3.5 : 2.5; // 完了した体験は太く
-      ctx.lineCap = 'round';
-      
-      // 体験カテゴリーに応じた影の色
-      const shadowColor = `rgba(${currentColorData.rgba.r}, ${currentColorData.rgba.g}, ${currentColorData.rgba.b}, 0.25)`;
-      ctx.shadowColor = shadowColor;
-      ctx.shadowBlur = current.experience.completed ? 8 : 5;
-      ctx.stroke();
-      
-      // 影をリセット
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
     }
 
     // 美しい体験ポイントを描画（色の調整）
     positions.forEach((pos, index) => {
       const { experience } = pos;
-      const colorData = getCategoryColor(experience.category);
+      const experienceColor = idToColor(experience.id);
       const pulseSize = 1 + Math.sin(animationFrame * 0.05 + index * 0.5) * 0.5;
       
       // 外側のソフトグロー
-      const glowGradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 16);
-      glowGradient.addColorStop(0, colorData.light);
-      glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      
+      const glowColor = `${experienceColor}26`; // 15% 透明度
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 16, 0, 2 * Math.PI);
-      ctx.fillStyle = glowGradient;
+      ctx.fillStyle = glowColor;
       ctx.fill();
       
-      // メインの円（より美しいグラデーション）
-      const mainGradient = ctx.createRadialGradient(pos.x - 1, pos.y - 1, 0, pos.x, pos.y, 8 + pulseSize);
-      mainGradient.addColorStop(0, '#ffffff');
-      mainGradient.addColorStop(0.4, colorData.primary);
-      mainGradient.addColorStop(1, colorData.dark);
-      
+      // メインの円（単一色）
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 7 + pulseSize, 0, 2 * Math.PI);
-      ctx.fillStyle = mainGradient;
+      ctx.fillStyle = experienceColor;
       ctx.fill();
       
       // 外枠を追加（より鮮明に）
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 7 + pulseSize, 0, 2 * Math.PI);
-      ctx.strokeStyle = colorData.primary;
+      ctx.strokeStyle = experienceColor;
       ctx.lineWidth = 1;
       ctx.stroke();
       
-      // 完了マーク
-      if (experience.completed) {
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 3.5, 0, 2 * Math.PI);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
-        
-        // チェックマーク
-        ctx.beginPath();
-        ctx.moveTo(pos.x - 1.5, pos.y);
-        ctx.lineTo(pos.x - 0.5, pos.y + 1);
-        ctx.lineTo(pos.x + 1.5, pos.y - 1.5);
-        ctx.strokeStyle = colorData.primary;
-        ctx.lineWidth = 1.5;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-      }
-      
-      // レベル表示（位置とサイズを調整）
-      for (let i = 0; i < (experience.level || 1); i++) {
-        ctx.beginPath();
-        ctx.arc(pos.x - 12 + i * 3, pos.y + 12, 1.2, 0, 2 * Math.PI);
-        ctx.fillStyle = colorData.primary;
-        ctx.fill();
-      }
     });
 
   }, [experiences, animationFrame]);
@@ -414,23 +181,28 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     const rect = canvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-    
+
     // クリックされた体験を探す
-    experiences.forEach((exp, index) => {
+    // 逆順にループすることで、手前にある要素が優先的にクリックされるようにする
+    for (let i = experiences.length - 1; i >= 0; i--) {
+      const exp = experiences[i];
       const centerX = rect.width / 2;
-      const angle = (index / experiences.length) * Math.PI * 2;
+      const angle = (i / experiences.length) * Math.PI * 2;
       const radius = Math.min(rect.width, rect.height) * 0.15;
-      const spiralFactor = index * 20;
-      
+      const spiralFactor = i * 20;
+
       const x = centerX + Math.cos(angle) * (radius + spiralFactor * 0.5);
-      const y = 80 + index * 60;
-      
+      const y = 80 + i * 100; // y座標を統一
+
       const distance = Math.sqrt(Math.pow(clickX - x, 2) + Math.pow(clickY - y, 2));
-      
-      if (distance < 15 && onExperienceClick) {
+
+      // クリックが円の範囲内にあるか、または糸の近くにあるかを判定
+      // 糸のクリック判定は、その糸が接続している円のクリックとして処理する
+      if (distance < 15 && onExperienceClick) { // 15は円の半径の許容範囲
         onExperienceClick(exp);
+        return; // クリック処理を終了
       }
-    });
+    }
   };
 
   try {
@@ -475,7 +247,7 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
                   <div
                     key={i}
                     className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: getCategoryColor(hoveredExperience.category).primary }}
+                    style={{ backgroundColor: idToColor(hoveredExperience.id) }}
                   />
                 ))}
               </div>
@@ -492,7 +264,7 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
             const category = experience.category || 'その他';
             const completed = Boolean(experience.completed);
             const id = experience.id || `exp_${index}`;
-            const colorData = getCategoryColor(category);
+            const experienceColor = idToColor(id);
 
             return (
               <div
@@ -505,7 +277,7 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
                 <div className="flex items-center gap-3">
                   <div 
                     className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: colorData.primary }}
+                    style={{ backgroundColor: experienceColor }}
                   />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-gray-800 truncate">{title}</h3>
@@ -520,7 +292,7 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
                         <div
                           key={i}
                           className="w-1.5 h-1.5 rounded-full"
-                          style={{ backgroundColor: colorData.primary }}
+                          style={{ backgroundColor: experienceColor }}
                         />
                       ))}
                     </div>
