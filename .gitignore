@@ -43,6 +43,7 @@ yarn-debug.log*
 yarn-error.log*
 .npm
 .yarn-integrity
+.vite/
 
 # Build outputs
 build/
@@ -83,6 +84,6 @@ masahiro_env/
 *.temp
 .cache/
 
-frontend/node_modules/     # npm installで再生成可能
+frontend/node_modules     # npm installで再生成可能
 frontend/.vite          # Viteの開発用キャッシュ
 frontend/package-lock.json # プロジェクトによっては
