@@ -436,7 +436,7 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
   try {
     return (
       <div className="px-4" ref={containerRef}>
-        <h2 className="text-xl font-bold text-gray-800 mb-6">✨ あなたの体験の軌跡</h2>
+        <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-6">Experiences</h2>
         
         {/* 美しいキャンバス部分 */}
         <div className="relative mb-8 bg-gradient-to-br from-purple-50/80 via-pink-50/60 to-blue-50/80 rounded-3xl p-6 shadow-lg backdrop-blur-sm border border-white/20">

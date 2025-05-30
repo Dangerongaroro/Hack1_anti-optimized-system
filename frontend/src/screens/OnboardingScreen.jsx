@@ -14,7 +14,7 @@ const OnboardingScreen = ({ onComplete }) => {
   const steps = [
     {
       title: "✨ Seren Pathsへようこそ！",
-      subtitle: "新しい自分を発見する旅を始めましょう",
+      subtitle: "最適化されない日常を始めましょう",
       type: "welcome"
     },
     {
