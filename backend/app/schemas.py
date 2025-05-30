@@ -1,37 +1,51 @@
 # backend/app/schemas.py
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 class RecommendationRequest(BaseModel):
-    level: int = Field(..., ge=1, le=3, description="チャレンジレベル（1-3）")
-    preferences: Dict = Field(default_factory=dict, description="ユーザー嗜好")
+    level: int = Field(..., ge=1, le=3, description="チャレンジレベル")
+    preferences: Dict[str, Any] = Field(default_factory=dict, description="ユーザー設定")
+    experiences: Optional[List[Dict[str, Any]]] = Field(default=None, description="過去の体験履歴")
 
 class FeedbackRequest(BaseModel):
     experience_id: str = Field(..., description="体験ID")
     feedback: str = Field(..., description="フィードバック内容")
+    experiences: Optional[List[Dict[str, Any]]] = Field(default=None, description="ユーザーの体験履歴")
 
 class PreferencesUpdateRequest(BaseModel):
-    experiences: List[Dict] = Field(..., description="体験データリスト")
+    experiences: List[Dict[str, Any]] = Field(..., description="体験履歴")
 
-# レスポンス用スキーマ
 class ChallengeResponse(BaseModel):
-    id: str = Field(..., description="チャレンジID")
-    title: str = Field(..., description="チャレンジタイトル")
-    category: str = Field(..., description="カテゴリー")
-    type: str = Field(..., description="タイプ")
-    icon: str = Field(..., description="アイコン名")
-    level: int = Field(..., description="レベル")
-    description: Optional[str] = Field(None, description="説明")
-    estimated_time: Optional[str] = Field(None, description="推定時間")
-    generated_at: Optional[str] = Field(None, description="生成日時")
+    title: str
+    category: str
+    type: str
+    icon: str
+    description: str
+    estimated_time: str
+    level: Optional[int] = None
+    encouragement: Optional[str] = None
+    anti_optimization_score: Optional[float] = None
+    personalization_reason: Optional[str] = None
+    generated_at: Optional[str] = None
 
 class StandardResponse(BaseModel):
-    status: str = Field(..., description="処理結果ステータス")
-    message: Optional[str] = Field(None, description="メッセージ")
-    data: Optional[Dict] = Field(None, description="データ")
+    status: str
+    message: str
+    timestamp: Optional[str] = None
+    learning_updates: Optional[Dict[str, Any]] = None
 
 class AnalysisResponse(BaseModel):
     status: str
     message: str
-    analysis: Dict = Field(..., description="分析結果")
+    analysis: Optional[Dict[str, Any]] = None
+    growth_trends: Optional[Dict[str, Any]] = None
+    recommendations: Optional[List[str]] = None
+    timestamp: Optional[str] = None
+
+class UserStatsResponse(BaseModel):
+    total_experiences: int
+    diversity_score: float
+    growth_trend: str
+    recent_categories: List[str]
+    achievements: List[str]
