@@ -14,7 +14,7 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
               <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Seren Paths
               </h1>
-              <p className="text-gray-600 mt-1">新しい自分を発見する旅</p>
+              <p className="text-gray-600 mt-1 font-bold tracking-wider text-lg">最適化されない日常</p>
             </div>
             <div className="flex gap-3">
               <div className="bg-white/80 backdrop-blur rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">

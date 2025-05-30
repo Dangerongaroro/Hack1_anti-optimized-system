@@ -280,7 +280,7 @@ const ExperienceStrings = ({ experiences, onExperienceClick }) => {
           あなたの旅が美しい一本の物語を紡いでいます
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          点をクリックして体験の詳細を見る
+          紐を選択して体験の詳細を見る
         </p>
       </div>
     </div>
