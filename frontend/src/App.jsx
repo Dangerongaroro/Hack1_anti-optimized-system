@@ -107,7 +107,7 @@ const App = () => {
 
   // 元の SerenPaths コンポーネントの return 部分をここにコピーし、コンポーネントのパスを修正
   return (
-    <div className="mx-auto bg-white min-h-screen relative pb-20 flex items-center justify-center"> {/* NavBarの高さ分padding-bottom */}
+    <div className="mx-auto bg-white min-h-screen relative pb-20 flex items-center justify-center max-w-md"> {/* NavBarの高さ分padding-bottom */}
       {currentScreen === 'home' && (
         <HomeScreen
           experiences={experiences}
