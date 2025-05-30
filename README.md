@@ -35,9 +35,40 @@ seren-paths-app/
     │   ├── main.py                     # FastAPIアプリ、CORS、ルーター登録
     │   ├── routes.py                   # APIエンドポイント定義
     │   ├── schemas.py                  # Pydanticモデル定義
-    │   └── services.py                 # ビジネスロジック（チャレンジ生成など）
+    │   ├── services/
+    │   │   ├── __init__.py             # ログ設定、サービス初期化
+    │   │   ├── ai_service.py           # Google Gemini AI統合
+    │   │   └── services.py             # ビジネスロジック（チャレンジ生成など）
+    ├── .env                            # 環境変数（APIキー、デバッグ設定）
     ├── requirements.txt
+    ├── ai_service.log                  # AIサービスログファイル
     └── uvicorn_runner.py               # uvicorn起動用 (オプション)
+```
+
+## 主要機能
+
+### AIレコメンデーション機能
+- **Google Gemini API統合**: 高品質なAI推奨システム
+- **パーソナライズド体験**: ユーザーの好みと過去の活動に基づく推奨
+- **セレンディピティエンジン**: 予期しない発見を促す推奨システム
+- **成長トレンド分析**: ユーザーの進歩をAIが分析
+
+### ログ機能
+- **リアルタイムログ**: AIの出力をコンソールとファイルに記録
+- **デバッグモード**: 詳細なログ出力でトラブルシューティング支援
+- **UTF-8対応**: 日本語ログの適切な記録
+
+## 環境設定
+
+### .envファイルの設定
+
+```bash
+# Google Gemini API Key
+GOOGLE_API_KEY="your_api_key_here"
+
+# その他の設定
+DEBUG=True
+API_BASE_URL=http://localhost:8000
 ```
 
 ## フロントエンド (React)
@@ -57,7 +88,7 @@ seren-paths-app/
 ### 画面
 
 - **HomeScreen.jsx**: ホーム画面
-- **RecommendationScreen.jsx**: レコメンデーション画面
+- **RecommendationScreen.jsx**: レコメンデーション画面（AI機能搭載）
 - **JournalScreen.jsx**: ジャーナル画面
 - **JournalEntryScreen.jsx**: ジャーナル入力画面
 - **ProfileScreen.jsx**: プロフィール画面
@@ -76,13 +107,25 @@ seren-paths-app/
 - **main.py**: FastAPIアプリ、CORS、ルーター登録
 - **routes.py**: APIエンドポイント定義
 - **schemas.py**: Pydanticモデル定義
-- **services.py**: ビジネスロジック（チャレンジ生成など）
-- **uvicorn_runner.py**: uvicorn起動用 (オプション)
+
+### AIサービス
+
+- **ai_service.py**: Google Gemini AI統合、レコメンデーションエンジン
+- **services.py**: ビジネスロジック（チャレンジ生成、フィードバック処理）
+- **__init__.py**: ログ設定とサービス初期化
+
+### ログ機能
+
+- **ai_service.log**: AIサービスの出力ログ
+- **デバッグモード**: 環境変数DEBUGでログレベル制御
+- **リアルタイム出力**: コンソールとファイルへの同時出力
 
 ## 技術スタック
 
 - **フロントエンド**: React, Tailwind CSS
 - **バックエンド**: FastAPI (Python)
+- **AI**: Google Gemini API
+- **ログ**: Python logging module
 - **開発ツール**: uvicorn (ASGI サーバー)
 
 ## セットアップ手順
@@ -115,7 +158,15 @@ cd backend
 pip install -r requirements.txt
 ```
 
-#### 2.3 バックエンドサーバーの起動
+#### 2.3 環境変数の設定
+
+```bash
+# .envファイルにGoogle Gemini APIキーを設定
+# GOOGLE_API_KEY="your_api_key_here"
+# DEBUG=True
+```
+
+#### 2.4 バックエンドサーバーの起動
 
 ```bash
 # バックエンドサーバーを起動
@@ -146,6 +197,7 @@ npm run dev
 
 - バックエンド: `http://127.0.0.1:8000`
 - フロントエンド: `http://localhost:5173`
+- ログファイル: `backend/ai_service.log`
 
 ### 開発時の起動手順（セットアップ後）
 
@@ -159,14 +211,35 @@ python uvicorn_runner.py
 ```
 
 #### フロントエンドの起動（新しいターミナル）
+
 ```bash
 cd "c:\Users\masah\制作物など\hack1\Hack1_anti-optimized-system\frontend"
 npm run dev
 ```
 
+## AIログの確認方法
+
+### リアルタイム確認
+
+```bash
+# コンソール出力を確認
+# バックエンド起動時に自動表示
+
+# ログファイルをリアルタイム監視
+tail -f ai_service.log
+```
+
+### デバッグモード
+
+```bash
+# .envファイルでDEBUG=Trueに設定
+# より詳細なログが出力される
+```
+
 ## トラブルシューティング
 
 ### Python関連のエラー
+
 ```bash
 # 仮想環境の再作成
 deactivate
@@ -176,6 +249,7 @@ masahiro_env\Scripts\activate
 ```
 
 ### Node.js関連のエラー
+
 ```bash
 # node_modulesの再インストール
 cd frontend
@@ -185,10 +259,21 @@ npm install
 ```
 
 ### ポートが使用中の場合
+
 ```bash
 # バックエンド用の別ポートを指定
 uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
 
 # フロントエンド用の別ポートを指定
 npm run dev -- --port 5174
+```
+
+### AIサービスのトラブルシューティング
+
+```bash
+# APIキーの確認
+echo %GOOGLE_API_KEY%
+
+# ログファイルの確認
+type ai_service.log
 ```
