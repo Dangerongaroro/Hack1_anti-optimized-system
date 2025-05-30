@@ -42,6 +42,11 @@ const App = () => {
         setIsFirstLaunch(false);
       }
     }
+    // ローカルストレージから体験データをロード
+    const savedExperiences = localStorage.getItem('experiences');
+    if (savedExperiences) {
+      setExperiences(JSON.parse(savedExperiences).map(exp => ({...exp, date: new Date(exp.date)})));
+    }
   }, []);
 
   // オンボーディング完了ハンドラー
@@ -79,6 +84,7 @@ const App = () => {
       setCurrentScreen('home');
       setCurrentChallenge(null);
       api.updatePreferences(updatedExperiences);
+      localStorage.setItem('experiences', JSON.stringify(updatedExperiences)); // ローカルストレージに保存
     }
   }, [currentChallenge, experiences]);
 
@@ -107,6 +113,7 @@ const App = () => {
       setJournalEntry({ title: '', category: '', emotion: '' });
       setCurrentScreen('home');
       api.updatePreferences(updatedExperiences);
+      localStorage.setItem('experiences', JSON.stringify(updatedExperiences)); // ローカルストレージに保存
     }
   }, [journalEntry, experiences]);
 
@@ -118,6 +125,17 @@ const App = () => {
     setSelectedExperience(null);
     await api.sendFeedback(experienceId, feedback);
     await api.updatePreferences(updatedExperiences);
+    localStorage.setItem('experiences', JSON.stringify(updatedExperiences)); // ローカルストレージに保存
+  }, [experiences]);
+
+  const handleClearMission = useCallback((experienceId) => {
+    const updatedExperiences = experiences.map(exp =>
+      exp.id === experienceId ? { ...exp, completed: true } : exp
+    );
+    setExperiences(updatedExperiences);
+    setSelectedExperience(null);
+    api.updatePreferences(updatedExperiences);
+    localStorage.setItem('experiences', JSON.stringify(updatedExperiences)); // ローカルストレージに保存
   }, [experiences]);
 
   const navigateToRecommendation = useCallback(() => {
@@ -164,6 +182,7 @@ const App = () => {
             experience={selectedExperience}
             onClose={() => setSelectedExperience(null)}
             onFeedback={handleExperienceFeedback}
+            onClearMission={handleClearMission} // onClearMissionを渡す
           />
         )}
 
