@@ -56,10 +56,10 @@ const ExperienceStrings = ({ experiences, onExperienceClick }) => {
         const x = baseX + Math.cos(angle) * amplitude * 0.3;
         const y = baseY + Math.sin(angle) * amplitude;
         
-        points.push({ 
-          x, 
-          y, 
-          exp, 
+        points.push({
+          x,
+          y,
+          exp,
           color: colors[exp.type],
           angle
         });
@@ -116,28 +116,45 @@ const ExperienceStrings = ({ experiences, onExperienceClick }) => {
 
       // 各体験ポイントを描画
       points.forEach((point, index) => {
+        const isFirst = index === 0;
+        const isLast = index === points.length - 1;
         const isHovered = hoveredExperience === point.exp.id;
         const size = isHovered ? 9 : 6;
-        
+        let color = point.color;
+        if (isFirst) {
+          color = '#000000';
+        } 
+
         // 外側の光彩
         const glowGradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, size * 3);
-        glowGradient.addColorStop(0, point.color + (isHovered ? '40' : '20'));
-        glowGradient.addColorStop(1, point.color + '00');
+        glowGradient.addColorStop(0, color + (isHovered ? '40' : '20'));
+        glowGradient.addColorStop(1, color + '00');
         ctx.fillStyle = glowGradient;
         ctx.beginPath();
         ctx.arc(point.x, point.y, size * 3, 0, Math.PI * 2);
         ctx.fill();
-        
+
         // メインの点
         ctx.beginPath();
         ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
-        const pointGradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, size);
-        pointGradient.addColorStop(0, '#FFFFFF');
-        pointGradient.addColorStop(0.7, point.color);
-        pointGradient.addColorStop(1, point.color + 'DD');
-        ctx.fillStyle = pointGradient;
+        let pointGradient;
+        if (isLast) {
+          pointGradient = ctx.createLinearGradient(point.x - size, point.y - size, point.x + size, point.y + size);
+          pointGradient.addColorStop(0, "red");
+          pointGradient.addColorStop(0.2, "orange");
+          pointGradient.addColorStop(0.4, "yellow");
+          pointGradient.addColorStop(0.6, "green");
+          pointGradient.addColorStop(0.8, "blue");
+          pointGradient.addColorStop(1, "violet");
+        } else {
+          pointGradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, size);
+          pointGradient.addColorStop(0, '#FFFFFF');
+          pointGradient.addColorStop(0.7, color);
+          pointGradient.addColorStop(1, color + 'DD');
+        }
+        ctx.fillStyle = pointGradient || color;
         ctx.fill();
-        
+
         // 内側の光
         ctx.beginPath();
         ctx.arc(point.x - size * 0.3, point.y - size * 0.3, size * 0.3, 0, Math.PI * 2);
