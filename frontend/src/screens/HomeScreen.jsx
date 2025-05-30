@@ -16,24 +16,24 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
 
   try {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 w-full mx-auto overflow-x-hidden">
         <div className="relative">
           {/* ヘッダー部分 */}
-          <div className="absolute top-0 left-0 right-0 z-10 p-6">
+          <div className="absolute top-0 left-0 right-0 z-10 px-4 py-6">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                   Seren Paths
                 </h1>
                 <p className="text-gray-600 mt-1 text-sm lg:text-lg font-bold" style={{ letterSpacing: '0.2em' }}>最適化されない日常</p>
               </div>
               <div className="flex gap-3">
-                <div className="bg-white/80 backdrop-blur rounded-full px-3 py-2 lg:px-4 lg:py-2 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
-                  <TrendingUp className="w-4 h-4 text-purple-600" />
+                <div className="bg-white/80 backdrop-blur rounded-full px-2 py-1 lg:px-3 lg:py-1 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
+                  <TrendingUp className="w-3 h-3 text-purple-600" />
                   <span className="text-sm font-medium">{safeUserStats.diversityScore}%</span>
                 </div>
-                <div className="bg-white/80 backdrop-blur rounded-full px-3 py-2 lg:px-4 lg:py-2 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
-                  <Calendar className="w-4 h-4 text-pink-600" />
+                <div className="bg-white/80 backdrop-blur rounded-full px-2 py-1 lg:px-3 lg:py-1 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
+                  <Calendar className="w-3 h-3 text-pink-600" />
                   <span className="text-sm font-medium">{safeUserStats.currentStreak}日</span>
                 </div>
               </div>
@@ -41,15 +41,15 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
           </div>
 
           {/* 体験表示部分 */}
-          <div className="pt-24 lg:pt-28 pb-8 px-4 lg:px-6">
+          <div className="pt-24 lg:pt-28 pb-8">
             <ExperienceStrings 
               experiences={safeExperiences} 
               onExperienceClick={onExperienceClick} 
             />
           </div>
 
-          {/* 統計表示（PC用） */}
-          <div className="hidden lg:block px-6 pb-6">
+          {/* 統計表示 */}
+          <div className="pb-6">
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-white/60 backdrop-blur-lg rounded-2xl p-4 text-center hover:bg-white/80 transition-colors">
                 <p className="text-2xl font-bold text-purple-600">{safeUserStats.totalExperiences}</p>
@@ -69,7 +69,7 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
           </div>
 
           {/* アクションボタン */}
-          <div className="px-6 pb-24">
+          <div className="pb-24 w-full mx-auto">
             <button
               onClick={() => {
                 console.log('Recommend button clicked');
