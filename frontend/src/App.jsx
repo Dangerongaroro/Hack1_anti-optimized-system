@@ -57,15 +57,15 @@ const App = () => {
     console.log('✅ Onboarding completed:', preferences);
   };
 
-  // 既存の関数たち...
   const handleGenerateChallenge = useCallback(async () => {
     try {
-      const challenge = await api.getRecommendation(selectedLevel, userPreferences);
+      // 体験履歴も含めてAPIに送信
+      const challenge = await api.getRecommendation(selectedLevel, userPreferences, experiences);
       setCurrentChallenge(challenge);
     } catch (error) {
       console.error('Challenge generation failed:', error);
     }
-  }, [selectedLevel, userPreferences]);
+  }, [selectedLevel, userPreferences, experiences]);
 
   const acceptChallenge = useCallback(() => {
     if (currentChallenge) {
