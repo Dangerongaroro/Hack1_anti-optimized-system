@@ -56,6 +56,10 @@ const App = () => {
     setIsFirstLaunch(false);
     console.log('✅ Onboarding completed:', preferences);
   };
+  const handleResetOnboarding = () => {
+  setIsFirstLaunch(true);
+  setCurrentScreen('home');
+  };
 
   const handleGenerateChallenge = useCallback(async () => {
     try {
@@ -174,7 +178,10 @@ const App = () => {
         />
       )}
       {currentScreen === 'profile' && (
-        <ProfileScreen userStats={userStats} />
+        <ProfileScreen 
+          userStats={userStats}
+          onResetOnboarding={handleResetOnboarding}  // この行を追加
+        />
       )}
 
         {selectedExperience && (
