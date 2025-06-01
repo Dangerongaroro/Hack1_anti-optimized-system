@@ -5,6 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 // 定数とサービス
 import { initialExperiences, initialUserStats } from './constants/initialData';
 import api from './services/api';
+import { generateChallengeLocal } from './utils/helpers.js';
 
 // コンポーネント
 import HomeScreen from './screens/HomeScreen.jsx';
@@ -25,14 +26,46 @@ const App = () => {
   const [experiences, setExperiences] = useState(
     initialExperiences.map(exp => ({...exp, date: new Date(exp.date)}))
   );
+  const [selectedLevel, setSelectedLevel] = useState(1);
+  
+  // レベル別お題を保持する状態を追加
+  const [challengesByLevel, setChallengesByLevel] = useState({
+    1: null,
+    2: null,
+    3: null
+  });
   const [currentChallenge, setCurrentChallenge] = useState(null);
-  const [selectedLevel, setSelectedLevel] = useState(2);
   const [journalEntry, setJournalEntry] = useState({ title: '', category: '', emotion: '' });
   const [userStats, setUserStats] = useState(initialUserStats);
   const [selectedExperience, setSelectedExperience] = useState(null);
 
+  // generateChallenge関数をコンポーネント内に移動
+  const generateChallenge = async (level) => {
+    try {
+      // 既存のapi.jsのgetRecommendationメソッドを使用
+      const challenge = await api.getRecommendation(level, userPreferences, experiences);
+      
+      // レベル情報を確実に追加
+      return {
+        ...challenge,
+        level: level
+      };
+    } catch (error) {
+      console.error('API接続エラー:', error);
+      // APIが失敗した場合はローカル生成にフォールバック
+      const localChallenge = generateChallengeLocal(level);
+      return {
+        ...localChallenge,
+        level: level
+      };
+    }
+  };
+
   // 初回起動チェック
   useEffect(() => {
+    // API初期化を追加
+    api.initialize();
+    
     const savedPreferences = localStorage.getItem('userPreferences');
     if (savedPreferences) {
       const preferences = JSON.parse(savedPreferences);
@@ -49,27 +82,101 @@ const App = () => {
     }
   }, []);
 
-  // オンボーディング完了ハンドラー
-  const handleOnboardingComplete = (preferences) => {
-    setUserPreferences(preferences);
-    setSelectedLevel(preferences.challengeLevel || 2);
-    setIsFirstLaunch(false);
-    console.log('✅ Onboarding completed:', preferences);
-  };
-  const handleResetOnboarding = () => {
-  setIsFirstLaunch(true);
-  setCurrentScreen('home');
-  };
+  // userPreferencesとexperiencesの状態が更新された後にお題を生成
+  useEffect(() => {
+    if (userPreferences && experiences && userPreferences.setupCompleted) {
+      generateAllLevelChallenges();
+    }
+  }, [userPreferences, experiences]); // generateAllLevelChallengesを依存関係に含めるとループになる可能性があるため除外
 
-  const handleGenerateChallenge = useCallback(async () => {
+  // レベル変更時に対応するお題を表示するuseEffect
+  useEffect(() => {
+    if (challengesByLevel[selectedLevel]) {
+      setCurrentChallenge(challengesByLevel[selectedLevel]);
+    }
+  }, [selectedLevel, challengesByLevel]);
+
+  // 全レベルのお題を生成する関数
+  const generateAllLevelChallenges = async () => {
+    console.log('🎯 全レベルのお題生成を開始');
+    console.log('現在のuserPreferences:', userPreferences);
+    console.log('現在のexperiences数:', experiences.length);
+    
+    const newChallenges = { ...challengesByLevel };
+    
+    for (let level = 1; level <= 3; level++) {
+      console.log(`📝 レベル${level}のお題を生成中...`);
+      try {
+        const challenge = await generateChallenge(level);
+        console.log(`✅ レベル${level}の生成結果:`, challenge);
+        console.log(`✅ レベル${level}のlevelプロパティ:`, challenge.level);
+        newChallenges[level] = challenge;
+      } catch (error) {
+        console.error(`❌ レベル${level}のお題生成に失敗:`, error);
+        // エラー時はローカル生成にフォールバック
+        const localChallenge = generateChallengeLocal(level);
+        console.log(`🔄 レベル${level}のローカル生成結果:`, localChallenge);
+        newChallenges[level] = localChallenge;
+      }
+    }
+    
+    console.log('🎊 全レベルのお題生成完了:', newChallenges);
+    setChallengesByLevel(newChallenges);
+    setCurrentChallenge(newChallenges[selectedLevel]);
+  };
+  
+  // 特定レベルのお題だけを再生成する関数
+  const regenerateCurrentLevelChallenge = async () => {
     try {
-      // 体験履歴も含めてAPIに送信
-      const challenge = await api.getRecommendation(selectedLevel, userPreferences, experiences);
+      const challenge = await generateChallenge(selectedLevel);
+      setChallengesByLevel(prev => ({
+        ...prev,
+        [selectedLevel]: challenge
+      }));
       setCurrentChallenge(challenge);
     } catch (error) {
-      console.error('Challenge generation failed:', error);
+      console.error('お題生成に失敗:', error);
+      const localChallenge = generateChallengeLocal(selectedLevel);
+      setChallengesByLevel(prev => ({
+        ...prev,
+        [selectedLevel]: localChallenge
+      }));
+      setCurrentChallenge(localChallenge);
     }
-  }, [selectedLevel, userPreferences, experiences]);
+  };
+
+  // 不足している関数を追加
+  const handleGenerateChallenge = useCallback(() => {
+    regenerateCurrentLevelChallenge();
+  }, []);
+
+  const handleOnboardingComplete = useCallback((preferences) => {
+    console.log('オンボーディング完了:', preferences);
+    setUserPreferences(preferences);
+    setIsFirstLaunch(false);
+    localStorage.setItem('userPreferences', JSON.stringify({
+      ...preferences,
+      setupCompleted: true
+    }));
+  }, []);
+
+  const handleResetOnboarding = useCallback(() => {
+    localStorage.removeItem('userPreferences');
+    localStorage.removeItem('experiences');
+    setIsFirstLaunch(true);
+    setUserPreferences({
+      avoidCategories: [],
+      preferredCategories: [],
+      challengeFrequency: 'daily'
+    });
+    setExperiences(initialExperiences.map(exp => ({...exp, date: new Date(exp.date)})));
+    setChallengesByLevel({
+      1: null,
+      2: null,
+      3: null
+    });
+    setCurrentChallenge(null);
+  }, []);
 
   const acceptChallenge = useCallback(() => {
     if (currentChallenge) {
@@ -171,7 +278,7 @@ const App = () => {
           currentChallenge={currentChallenge}
           selectedLevel={selectedLevel}
           setSelectedLevel={setSelectedLevel}
-          onGenerateChallenge={handleGenerateChallenge}
+          onGenerateChallenge={regenerateCurrentLevelChallenge}
           onAcceptChallenge={acceptChallenge}
           onSkipChallenge={skipChallenge}
           onClose={() => setCurrentScreen('home')}

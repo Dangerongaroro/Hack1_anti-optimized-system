@@ -53,6 +53,7 @@ const localChallengesData = {
   ]
 };
 
+// ローカルでお題を生成する関数
 export const generateChallengeLocal = (level) => {
   const levelChallenges = localChallengesData[level] || localChallengesData[2];
   if (!levelChallenges || levelChallenges.length === 0) {
@@ -64,5 +65,17 @@ export const generateChallengeLocal = (level) => {
       level: level 
     };
   }
-  return { ...levelChallenges[Math.floor(Math.random() * levelChallenges.length)], level };
+  
+  // 重要: 生成するお題オブジェクトに必ずlevelプロパティを含める
+  const challenge = {
+    id: `local_${Date.now()}`,
+    title: levelChallenges[Math.floor(Math.random() * levelChallenges.length)].title,
+    description: 'このチャレンジはあなたのスキルを向上させるためのものです。',
+    category: levelChallenges[Math.floor(Math.random() * levelChallenges.length)].category,
+    type: 'challenge',
+    level: level,  // この行が重要
+    // その他のプロパティ
+  };
+  
+  return challenge;
 };

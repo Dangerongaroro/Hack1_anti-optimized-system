@@ -1,6 +1,65 @@
-import React, { useEffect } from 'react';
 import IconRenderer from '../components/IconRenderer';
 import { X, RefreshCw, Sparkles } from 'lucide-react';
+import { generateChallengeLocal } from '../utils/helpers.js';
+
+// API設定
+const API_BASE_URL = 'http://localhost:8000/api';
+
+const api = {
+  // 自動保存の設定を管理
+  getAutoSaveEnabled: () => {
+    return localStorage.getItem('autoSaveExperiences') !== 'false';
+  },
+  
+  setAutoSaveEnabled: (enabled) => {
+    localStorage.setItem('autoSaveExperiences', enabled.toString());
+  },
+  
+  updatePreferences: async (experiences) => {
+    if (!api.getAutoSaveEnabled()) {
+      console.log('🔧 Auto-save disabled, skipping API call');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/preferences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ experiences })
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('設定の更新に失敗:', error);
+      throw error;
+    }
+  },
+
+  // 起動時にAPI接続をチェック
+  checkHealth: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/health`);
+      return response.ok;
+    } catch (error) {
+      console.error('API接続エラー:', error);
+      return false;
+    }
+  },
+
+  // アプリ起動時に保留中のデータを送信
+  syncPendingData: () => {
+    const pendingData = JSON.parse(localStorage.getItem('pendingExperiences')) || [];
+    if (pendingData.length === 0) return;
+    
+    api.updatePreferences(pendingData)
+      .then(() => {
+        console.log('保留中のデータを正常に送信');
+        localStorage.removeItem('pendingExperiences');
+      })
+      .catch((error) => {
+        console.error('保留中のデータの送信に失敗:', error);
+      });
+  }
+};
 
 // お題提案画面
 const RecommendationScreen = ({ 
@@ -12,19 +71,6 @@ const RecommendationScreen = ({
   onSkipChallenge,
   onClose 
 }) => {
-  // 初回レンダリング時にチャレンジを生成
-  useEffect(() => {
-    if (!currentChallenge) {
-      onGenerateChallenge();
-    }
-  }, [selectedLevel]); // selectedLevelが変更されたときも再生成
-
-  const handleLevelChange = (level) => {
-    setSelectedLevel(level);
-    // レベル変更時は即座に新しいチャレンジを生成
-    setTimeout(() => onGenerateChallenge(), 100);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-6">
       <div className="flex justify-between items-center mb-8">
@@ -48,7 +94,10 @@ const RecommendationScreen = ({
           ].map((item) => (
             <button
               key={item.level}
-              onClick={() => handleLevelChange(item.level)}
+              onClick={() => {
+                setSelectedLevel(item.level);
+                // レベル変更時は既に生成済みのお題が表示されるのでAPIは呼ばない
+              }}
               className={`flex-1 py-3 px-2 rounded-xl font-medium transition-all ${
                 selectedLevel === item.level
                   ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'

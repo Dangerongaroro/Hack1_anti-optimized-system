@@ -1,6 +1,7 @@
 // frontend/src/screens/ProfileScreen.jsx
 import React, { useState } from 'react';
 import { ChevronRight, Bell, Shield, Settings, Download } from 'lucide-react';
+import api from '../services/api';
 
 const ProfileScreen = ({ userStats, onResetOnboarding }) => {
   const [showPrivacySettings, setShowPrivacySettings] = useState(false);
@@ -15,6 +16,7 @@ const ProfileScreen = ({ userStats, onResetOnboarding }) => {
     achievements: true,
     weeklyReport: false
   });
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(api.getAutoSaveEnabled());
 
   const handleExportData = () => {
     const data = {
@@ -52,6 +54,21 @@ const ProfileScreen = ({ userStats, onResetOnboarding }) => {
     setNotificationSettings(prev => ({ ...prev, [key]: !prev[key] }));
     // ここで実際の設定保存処理を行う
     localStorage.setItem('notificationSettings', JSON.stringify({ ...notificationSettings, [key]: !notificationSettings[key] }));
+  };
+
+  const handleAutoSaveToggle = (enabled) => {
+    setAutoSaveEnabled(enabled);
+    api.setAutoSaveEnabled(enabled);
+  };
+
+  const handleManualSync = async () => {
+    try {
+      const experiences = JSON.parse(localStorage.getItem('experiences') || '[]');
+      await api.updatePreferences(experiences);
+      alert('データ同期が完了しました');
+    } catch (error) {
+      alert('同期に失敗しました');
+    }
   };
 
   return (
@@ -216,6 +233,34 @@ const ProfileScreen = ({ userStats, onResetOnboarding }) => {
                 </button>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* 設定セクションを追加 */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">設定</h3>
+          
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-gray-700">自動データ保存</span>
+            <button
+              onClick={() => handleAutoSaveToggle(!autoSaveEnabled)}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                autoSaveEnabled ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                autoSaveEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`} />
+            </button>
+          </div>
+          
+          {!autoSaveEnabled && (
+            <button
+              onClick={handleManualSync}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+            >
+              データを手動同期
+            </button>
           )}
         </div>
 
