@@ -39,6 +39,9 @@ const App = () => {
   const [userStats, setUserStats] = useState(initialUserStats);
   const [selectedExperience, setSelectedExperience] = useState(null);
 
+  // お題生成の完了状態を追加
+  const [challengesInitialized, setChallengesInitialized] = useState(false);
+
   // generateChallenge関数をコンポーネント内に移動
   const generateChallenge = async (level) => {
     try {
@@ -82,25 +85,14 @@ const App = () => {
     }
   }, []);
 
-  // userPreferencesとexperiencesの状態が更新された後にお題を生成
-  useEffect(() => {
-    if (userPreferences && experiences && userPreferences.setupCompleted) {
-      generateAllLevelChallenges();
-    }
-  }, [userPreferences, experiences]); // generateAllLevelChallengesを依存関係に含めるとループになる可能性があるため除外
-
-  // レベル変更時に対応するお題を表示するuseEffect
-  useEffect(() => {
-    if (challengesByLevel[selectedLevel]) {
-      setCurrentChallenge(challengesByLevel[selectedLevel]);
-    }
-  }, [selectedLevel, challengesByLevel]);
-
   // 全レベルのお題を生成する関数
-  const generateAllLevelChallenges = async () => {
+  const generateAllLevelChallenges = useCallback(async () => {
     console.log('🎯 全レベルのお題生成を開始');
     console.log('現在のuserPreferences:', userPreferences);
     console.log('現在のexperiences数:', experiences.length);
+    
+    // 生成開始時に初期化状態をfalseに
+    setChallengesInitialized(false);
     
     const newChallenges = { ...challengesByLevel };
     
@@ -123,12 +115,31 @@ const App = () => {
     console.log('🎊 全レベルのお題生成完了:', newChallenges);
     setChallengesByLevel(newChallenges);
     setCurrentChallenge(newChallenges[selectedLevel]);
-  };
-  
+    
+    // 全て完了してから初期化完了をtrueに
+    setChallengesInitialized(true);
+  }, [userPreferences, experiences, challengesByLevel, selectedLevel, generateChallenge]);
+
+  // userPreferencesとexperiencesの状態が更新された後にお題を生成
+  useEffect(() => {
+    if (userPreferences && experiences && userPreferences.setupCompleted) {
+      generateAllLevelChallenges();
+    }
+  }, [userPreferences, experiences]); // generateAllLevelChallengesを依存関係に含めるとループになる可能性があるため除外
+
+  // レベル変更時に対応するお題を表示するuseEffect
+  useEffect(() => {
+    if (challengesByLevel[selectedLevel] && challengesInitialized) {
+      setCurrentChallenge(challengesByLevel[selectedLevel]);
+    }
+  }, [selectedLevel, challengesByLevel, challengesInitialized]);
+
   // 特定レベルのお題だけを再生成する関数
   const regenerateCurrentLevelChallenge = async () => {
     try {
       const challenge = await generateChallenge(selectedLevel);
+      console.log(`🔄 レベル${selectedLevel}の再生成結果:`, challenge);
+      
       setChallengesByLevel(prev => ({
         ...prev,
         [selectedLevel]: challenge
@@ -137,6 +148,8 @@ const App = () => {
     } catch (error) {
       console.error('お題生成に失敗:', error);
       const localChallenge = generateChallengeLocal(selectedLevel);
+      console.log(`🔄 レベル${selectedLevel}のローカル再生成結果:`, localChallenge);
+      
       setChallengesByLevel(prev => ({
         ...prev,
         [selectedLevel]: localChallenge
@@ -145,10 +158,10 @@ const App = () => {
     }
   };
 
-  // 不足している関数を追加
+  // handleGenerateChallenge関数の修正
   const handleGenerateChallenge = useCallback(() => {
     regenerateCurrentLevelChallenge();
-  }, []);
+  }, [regenerateCurrentLevelChallenge]); // 正しい依存関係を追加
 
   const handleOnboardingComplete = useCallback((preferences) => {
     console.log('オンボーディング完了:', preferences);
@@ -250,9 +263,9 @@ const App = () => {
   }, [experiences]);
 
   const navigateToRecommendation = useCallback(() => {
-    handleGenerateChallenge();
+    // handleGenerateChallenge()を削除 - 不要
     setCurrentScreen('recommendation');
-  }, [handleGenerateChallenge]);
+  }, []); // handleGenerateChallenge依存関係も削除
 
   // 初回起動時はオンボーディング画面を表示
   if (isFirstLaunch) {
@@ -264,49 +277,53 @@ const App = () => {
   }
 
   return (
-    <div className="mx-auto bg-white w-full relative pb-20 flex items-center justify-center"> {/* NavBarの高さ分padding-bottom */}
-      {currentScreen === 'home' && (
-        <HomeScreen
-          experiences={experiences}
-          userStats={userStats}
-          onNavigateToRecommendation={navigateToRecommendation}
-          onExperienceClick={setSelectedExperience}
-        />
-      )}
-      {currentScreen === 'recommendation' && (
-        <RecommendationScreen
-          currentChallenge={currentChallenge}
-          selectedLevel={selectedLevel}
-          setSelectedLevel={setSelectedLevel}
-          onGenerateChallenge={regenerateCurrentLevelChallenge}
-          onAcceptChallenge={acceptChallenge}
-          onSkipChallenge={skipChallenge}
-          onClose={() => setCurrentScreen('home')}
-        />
-      )}
-      {currentScreen === 'profile' && (
-        <ProfileScreen 
-          userStats={userStats}
-          onResetOnboarding={handleResetOnboarding}  // この行を追加
-        />
-      )}
+    <div className="min-h-screen bg-gray-50">
+      <ErrorBoundary>
+        <div className="mx-auto bg-white w-full relative pb-20 flex items-center justify-center"> {/* NavBarの高さ分padding-bottom */}
+          {currentScreen === 'home' && (
+            <HomeScreen
+              experiences={experiences}
+              userStats={userStats}
+              onNavigateToRecommendation={navigateToRecommendation}
+              onExperienceClick={setSelectedExperience}
+            />
+          )}
+          {currentScreen === 'recommendation' && (
+            <RecommendationScreen
+              currentChallenge={challengesInitialized ? currentChallenge : null}
+              selectedLevel={selectedLevel}
+              setSelectedLevel={setSelectedLevel}
+              onGenerateChallenge={regenerateCurrentLevelChallenge}
+              onAcceptChallenge={acceptChallenge}
+              onSkipChallenge={skipChallenge}
+              onClose={() => setCurrentScreen('home')}
+            />
+          )}
+          {currentScreen === 'profile' && (
+            <ProfileScreen 
+              userStats={userStats}
+              onResetOnboarding={handleResetOnboarding}  // この行を追加
+            />
+          )}
 
-        {selectedExperience && (
-          <ExperienceDetailModal
-            experience={selectedExperience}
-            onClose={() => setSelectedExperience(null)}
-            onFeedback={handleExperienceFeedback}
-            onClearMission={handleClearMission} // onClearMissionを渡す
-          />
-        )}
+            {selectedExperience && (
+              <ExperienceDetailModal
+                experience={selectedExperience}
+                onClose={() => setSelectedExperience(null)}
+                onFeedback={handleExperienceFeedback}
+                onClearMission={handleClearMission} // onClearMissionを渡す
+              />
+            )}
 
-      {!['journal-entry'].includes(currentScreen) && ( // recommendation画面でもNavBar非表示
-        <NavigationBar
-          currentScreen={currentScreen}
-          setCurrentScreen={setCurrentScreen}
-          onNavigateToRecommendation={navigateToRecommendation}
-        />
-      )}
+          {!['journal-entry'].includes(currentScreen) && ( // recommendation画面でもNavBar非表示
+            <NavigationBar
+              currentScreen={currentScreen}
+              setCurrentScreen={setCurrentScreen}
+              onNavigateToRecommendation={navigateToRecommendation}
+            />
+          )}
+        </div>
+      </ErrorBoundary>
     </div>
   );
 };

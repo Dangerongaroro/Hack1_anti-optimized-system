@@ -1,6 +1,7 @@
 import IconRenderer from '../components/IconRenderer';
 import { X, RefreshCw, Sparkles } from 'lucide-react';
 import { generateChallengeLocal } from '../utils/helpers.js';
+import { useState } from 'react';
 
 // API設定
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -71,6 +72,35 @@ const RecommendationScreen = ({
   onSkipChallenge,
   onClose 
 }) => {
+  // ローディング状態を管理
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // お題生成処理をラップする関数
+  const handleGenerateChallenge = async () => {
+    setIsGenerating(true);
+    try {
+      await onGenerateChallenge();
+    } finally {
+      // 少し遅延を入れてローディング表示を確実に見せる
+      setTimeout(() => {
+        setIsGenerating(false);
+      }, 500);
+    }
+  };
+
+  // スキップ時のお題生成も同様に処理
+  const handleSkipAndGenerate = async (reason) => {
+    setIsGenerating(true);
+    try {
+      onSkipChallenge(reason);
+      await onGenerateChallenge();
+    } finally {
+      setTimeout(() => {
+        setIsGenerating(false);
+      }, 500);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-6">
       <div className="flex justify-between items-center mb-8">
@@ -98,11 +128,12 @@ const RecommendationScreen = ({
                 setSelectedLevel(item.level);
                 // レベル変更時は既に生成済みのお題が表示されるのでAPIは呼ばない
               }}
+              disabled={isGenerating}
               className={`flex-1 py-3 px-2 rounded-xl font-medium transition-all ${
                 selectedLevel === item.level
                   ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
                   : 'bg-white/60 text-gray-700 hover:bg-white/80'
-              }`}
+              } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <div className="flex flex-col items-center gap-1">
                 <span className="text-lg">{item.emoji}</span>
@@ -115,7 +146,7 @@ const RecommendationScreen = ({
       </div>
 
       {/* お題カード */}
-      {currentChallenge ? (
+      {currentChallenge && !isGenerating ? (
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-8 shadow-xl animate-fadeIn">
           <div className="flex items-center justify-center mb-6">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center animate-pulse">
@@ -169,31 +200,26 @@ const RecommendationScreen = ({
             </button>
             
             <button
-              onClick={() => {
-                onGenerateChallenge();
-              }}
-              className="w-full py-3 bg-blue-100 text-blue-700 rounded-xl font-medium hover:bg-blue-200 transition-colors flex items-center justify-center gap-2"
+              onClick={handleGenerateChallenge}
+              disabled={isGenerating}
+              className="w-full py-3 bg-blue-100 text-blue-700 rounded-xl font-medium hover:bg-blue-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
               別のお題を見る
             </button>
             
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  onSkipChallenge('not_interested');
-                  onGenerateChallenge();
-                }}
-                className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200 transition-colors"
+                onClick={() => handleSkipAndGenerate('not_interested')}
+                disabled={isGenerating}
+                className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 興味なし
               </button>
               <button
-                onClick={() => {
-                  onSkipChallenge('too_difficult');
-                  onGenerateChallenge();
-                }}
-                className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200 transition-colors"
+                onClick={() => handleSkipAndGenerate('too_difficult')}
+                disabled={isGenerating}
+                className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 今は無理
               </button>
@@ -201,11 +227,16 @@ const RecommendationScreen = ({
           </div>
         </div>
       ) : (
-        // ローディング状態
-        <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-8 shadow-xl">
-          <div className="flex flex-col items-center justify-center py-12">
+        // ローディング状態（既存のお題がない場合 または 生成中の場合）
+        <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-8 shadow-xl min-h-[400px] flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center">
             <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-600">新しいお題を考えています...</p>
+            <p className="text-gray-600 text-center">
+              {isGenerating ? '新しいお題を考えています...' : '新しいお題を考えています...'}
+            </p>
+            <p className="text-sm text-gray-400 mt-2 text-center">
+              少々お待ちください
+            </p>
           </div>
         </div>
       )}
