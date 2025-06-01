@@ -49,3 +49,23 @@ class UserStatsResponse(BaseModel):
     growth_trend: str
     recent_categories: List[str]
     achievements: List[str]
+
+class ThemeChallengeResponse(BaseModel):
+    id: str
+    title: str
+    description: str
+    duration: str
+    participants: int
+    difficulty: int
+    rewards: List[str]
+    challenges: List[str]
+    start_date: str
+    end_date: str
+
+class GrowthAnalysisResponse(BaseModel):
+    status: str
+    growth_stage: str
+    insights: List[str]
+    next_challenges: List[str]
+    diversity_score: float
+    category_distribution: Dict[str, int]

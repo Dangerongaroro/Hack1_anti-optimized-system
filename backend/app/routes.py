@@ -1,14 +1,8 @@
 # backend/app/routes.py
 from fastapi import APIRouter, HTTPException
-from .schemas import (
-    RecommendationRequest, 
-    FeedbackRequest, 
-    PreferencesUpdateRequest,
-    ChallengeResponse,
-    StandardResponse,
-    AnalysisResponse,
-    UserStatsResponse
-)
+from typing import List, Dict, Any  # Listを追加
+from datetime import datetime, timedelta  
+
 from .services import (
     get_recommendation_service, 
     process_feedback_service, 
@@ -16,8 +10,104 @@ from .services import (
     analyze_growth_trends,
     serendipity_engine
 )
+# 既存のインポートに追加
+from .schemas import (
+    RecommendationRequest, 
+    FeedbackRequest, 
+    PreferencesUpdateRequest,
+    ChallengeResponse,
+    StandardResponse,
+    AnalysisResponse,
+    UserStatsResponse,
+    ThemeChallengeResponse,
+    GrowthAnalysisResponse
+)
 
 router = APIRouter()
+# 新しいエンドポイントを追加
+@router.get("/themes/active", response_model=List[ThemeChallengeResponse])
+async def get_active_themes():
+    """アクティブなテーマチャレンジを取得"""
+    try:
+        # 実際にはDBから取得
+        themes = [
+            {
+                "id": "local-first",
+                "title": "地元再発見ウィーク",
+                "description": "普段通り過ぎる地元の魅力を再発見しよう",
+                "duration": "7日間",
+                "participants": 234,
+                "difficulty": 2,
+                "rewards": ["地元探検家バッジ", "多様性スコア+10"],
+                "challenges": [
+                    "地元の歴史スポットを訪れる",
+                    "地元の老舗で食事",
+                    "地元の図書館で郷土資料を読む"
+                ],
+                "start_date": datetime.now().isoformat(),
+                "end_date": (datetime.now() + timedelta(days=7)).isoformat()
+            }
+        ]
+        return themes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"テーマ取得に失敗しました: {str(e)}")
+
+@router.post("/growth/analysis", response_model=GrowthAnalysisResponse)
+async def analyze_growth(experiences: List[Dict[str, Any]]):
+    """成長分析を実行"""
+    try:
+        analysis = analyze_growth_trends(experiences)
+        
+        # AIによる深い分析も追加
+        ai_insights = await serendipity_engine.ai_service.analyze_growth_pattern(experiences)
+        
+        return GrowthAnalysisResponse(
+            status="success",
+            growth_stage=analysis['growth_stage'],
+            insights=ai_insights.get('insights', []),
+            next_challenges=ai_insights.get('next_challenges', []),
+            diversity_score=analysis['diversity_score'],
+            category_distribution=analysis['category_distribution']
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"成長分析に失敗しました: {str(e)}")
+
+@router.post("/journal/templates")
+async def get_journal_templates(user_context: Dict[str, Any]):
+    """パーソナライズされたジャーナルテンプレートを取得"""
+    try:
+        templates = [
+            {
+                "id": "discovery",
+                "title": "今日の小さな発見",
+                "prompts": ["何を発見しましたか？", "どんな気持ちになりましたか？"],
+                "tags": ["発見", "気づき", "新鮮"]
+            },
+            {
+                "id": "challenge",
+                "title": "挑戦したこと",
+                "prompts": ["どんな挑戦でしたか？", "結果はどうでしたか？"],
+                "tags": ["挑戦", "成長", "勇気"]
+            },
+            {
+                "id": "emotion",
+                "title": "心が動いた瞬間",
+                "prompts": ["何に心を動かされましたか？", "なぜそう感じたと思いますか？"],
+                "tags": ["感動", "気持ち", "内省"]
+            }
+        ]
+        
+        # AIでパーソナライズ
+        if user_context.get('recent_experiences'):
+            personalized = await serendipity_engine.ai_service.suggest_journal_prompts(
+                user_context['recent_experiences']
+            )
+            if personalized:
+                templates.extend(personalized)
+        
+        return {"templates": templates}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"テンプレート取得に失敗しました: {str(e)}")
 
 @router.post("/recommendations", response_model=ChallengeResponse)
 async def get_recommendation_endpoint(request: RecommendationRequest):
