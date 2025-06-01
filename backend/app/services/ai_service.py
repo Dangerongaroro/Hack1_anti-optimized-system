@@ -27,7 +27,7 @@ class AIRecommendationService:
         if LANGCHAIN_AVAILABLE and google_api_key and google_api_key != 'your_api_key_here':
             try:
                 self.model = ChatGoogleGenerativeAI(
-                    model="gemini-2.0-flash",
+                    model="gemma-3-12b-it",
                     google_api_key=google_api_key
                 )
                 # 接続テスト

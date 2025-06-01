@@ -112,30 +112,35 @@ const api = {
     }
   },
 
-  // ユーザー嗜好更新（分析結果付き）
+  // 自動保存の設定を管理
+  getAutoSaveEnabled: () => {
+    return localStorage.getItem('autoSaveExperiences') !== 'false'; // デフォルトはtrue
+  },
+  
+  setAutoSaveEnabled: (enabled) => {
+    localStorage.setItem('autoSaveExperiences', enabled.toString());
+  },
+  
+  // 既存のupdatePreferencesを条件付きに
   updatePreferences: async (experiences) => {
+    if (!api.getAutoSaveEnabled()) {
+      console.log('🔧 Auto-save disabled, skipping API call');
+      return;
+    }
+    
     try {
-      const response = await fetch(`${API_BASE_URL}/preferences/update`, {
+      const response = await fetch(`${API_BASE_URL}/preferences`, { // BASE_URL → API_BASE_URL
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ experiences })
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      console.log('✅ Preferences updated with analysis:', result);
-      return result;
+      return await response.json();
     } catch (error) {
-      console.warn('Failed to update preferences, will retry later:', error.message);
-      // 嗜好をローカルストレージに保存
-      this.savePendingPreferences(experiences);
-      return { status: 'pending', message: 'Preferences saved for later' };
+      console.error('設定の更新に失敗:', error);
+      throw error;
     }
   },
-
+  
   // 保留中のフィードバックを保存
   savePendingFeedback: (experienceId, feedback) => {
     try {
@@ -191,15 +196,28 @@ const api = {
     } catch (error) {
       return false;
     }
+  },
+
+  // useEffectの代わりに初期化関数を作成
+  initialize: async () => {
+    try {
+      const isHealthy = await api.checkHealth();
+      if (isHealthy) {
+        console.log('✅ API接続OK');
+        await api.syncPendingData();
+      } else {
+        console.log('⚠️ API未接続 - オフラインモード');
+      }
+    } catch (error) {
+      console.error('API初期化エラー:', error);
+    }
   }
 };
 
-// 起動時にAPI接続をチェック
-api.checkHealth().then(isHealthy => {
-  console.log(isHealthy ? '✅ Enhanced API connection established' : '⚠️ API not available, using fallback');
-});
-
-// アプリ起動時に保留中のデータを送信
-api.syncPendingData();
+// useEffectを削除
+// ❌ 削除対象
+// useEffect(() => {
+//   // 初期化処理
+// }, []);
 
 export default api;
