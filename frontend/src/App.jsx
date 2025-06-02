@@ -232,6 +232,16 @@ const App = () => {
     setCurrentScreen('recommendation');
   }, []);
 
+  const handleExperienceClick = useCallback((experience) => {
+    // 体験の詳細表示やアクション処理
+    setSelectedExperience(experience);
+    // 必要に応じて画面遷移
+  }, []);
+
+  const navigateToJournalEntry = useCallback(() => {
+    setCurrentScreen('journal-entry');
+  }, []);
+
   const handleJoinThemeChallenge = useCallback((theme) => {
     setActiveThemeChallenge(theme);
     // テーマに関連するお題を生成
@@ -267,12 +277,13 @@ const App = () => {
       <ErrorBoundary>
         <div className="mx-auto bg-white w-full max-w-screen-xl relative pb-20">
           {currentScreen === 'home' && (
-            <HomeScreen
+            <HomeScreen 
               experiences={experiences}
               userStats={userStats}
               onNavigateToRecommendation={navigateToRecommendation}
-              onExperienceClick={setSelectedExperience}
+              onExperienceClick={handleExperienceClick}
               onClearMission={handleClearMission}
+              onNavigateToJournalEntry={navigateToJournalEntry}
             />
           )}
           {currentScreen === 'recommendation' && (
@@ -298,7 +309,7 @@ const App = () => {
               onBack={() => setCurrentScreen('home')}
             />
           )}
-          {currentScreen === 'journal' && (
+          {currentScreen === 'journal-entry' && (
             <JournalEntryScreen
               onBack={() => setCurrentScreen('home')}
               onSave={saveJournalEntry}
@@ -320,7 +331,7 @@ const App = () => {
             />
           )}
 
-          {!['journal', 'gallery', 'theme-challenge'].includes(currentScreen) && (
+          {!['journal', 'gallery', 'theme-challenge', 'journal-entry'].includes(currentScreen) && (
             <NavigationBar
               currentScreen={currentScreen}
               setCurrentScreen={setCurrentScreen}
