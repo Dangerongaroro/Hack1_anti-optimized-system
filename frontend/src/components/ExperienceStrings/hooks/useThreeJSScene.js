@@ -66,6 +66,7 @@ export const useThreeJSScene = (experiences) => {
     return { scene, camera, renderer, stars };
   };
 
+
   const startAnimation = (stars) => {
     let animationId;
     const animate = () => {
@@ -73,7 +74,7 @@ export const useThreeJSScene = (experiences) => {
       
       // 各種アニメーション処理
       animateStars(stars);
-      animateSpheres(meshesRef, hoveredMeshRef);
+      animateSpheres(meshesRef, hoveredMeshRef, sceneRef.current);
       animateSceneParticles(sceneRef.current);
       animateParticles(sceneRef.current, particleSystemsRef);
       

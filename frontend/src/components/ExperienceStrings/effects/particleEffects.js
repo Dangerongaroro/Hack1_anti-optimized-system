@@ -4,37 +4,67 @@ import * as THREE from 'three';
 export const createHoverParticles = (sceneRef, particleSystemsRef, position, color) => {
   if (!sceneRef.current) return;
   
-  const particleCount = 15;
+  const particleCount = 20;
   const particles = new THREE.Group();
   
+  // パーティクルの位置と属性を配列で管理
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+  const sizes = new Float32Array(particleCount);
+  const velocities = [];
+  
   for (let i = 0; i < particleCount; i++) {
-    const geometry = new THREE.SphereGeometry(0.04, 6, 6);
-    const material = new THREE.MeshBasicMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.8,
-      blending: THREE.AdditiveBlending
-    });
-    const particle = new THREE.Mesh(geometry, material);
-    
-    particle.position.copy(position);
     // 円形に広がる初速度
     const angle = (i / particleCount) * Math.PI * 2;
-    const speed = 0.1;
-    particle.velocity = new THREE.Vector3(
+    const speed = 0.15 + Math.random() * 0.1;
+    const velocity = new THREE.Vector3(
       Math.cos(angle) * speed,
       Math.sin(angle) * speed,
       (Math.random() - 0.5) * speed * 0.5
     );
-    particle.life = 1.0;
+    velocities.push(velocity);
     
-    particles.add(particle);
+    // 初期位置
+    positions[i * 3] = position.x;
+    positions[i * 3 + 1] = position.y;
+    positions[i * 3 + 2] = position.z;
+    
+    // 色
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+    
+    // サイズ
+    sizes[i] = 0.05 + Math.random() * 0.03;
   }
   
-  particles.userData = { isHoverParticle: true };
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  
+  const material = new THREE.PointsMaterial({
+    size: 0.06,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true
+  });
+  
+  const particleSystem = new THREE.Points(geometry, material);
+  particleSystem.userData = { 
+    isHoverParticle: true,
+    velocities: velocities,
+    life: 1.0,
+    startTime: Date.now()
+  };
+  
+  particles.add(particleSystem);
   sceneRef.current.add(particles);
   particleSystemsRef.current.push(particles);
 };
+
 
 // クリック時のパーティクル生成
 export const createClickParticles = (sceneRef, particleSystemsRef, position, color) => {

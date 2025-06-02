@@ -75,15 +75,33 @@ export const createCompletedSpheres = (scene, experiences, meshesRef) => {
     });
     const sphere = new THREE.Mesh(geometry, material);
     
-    // ランダムな配置（発射角60度未満）
-    const angle = Math.random() * Math.PI * 2; // 方位角（0〜360度）
-    const elevation = Math.random() * (Math.PI / 3); // 仰角（0〜60度）
-    const distance = 1.5 + Math.random() * 2; // 距離（1.5〜3.5）
+    // らせんベースの配置（やや角度をつける）
+    const spiralTurns = 2; // らせんの巻数
+    const totalHeight = 4; // 全体の高さ範囲
+    const baseRadius = 2; // 基本半径
     
-    // 球面座標から直交座標へ変換
-    sphere.position.x = distance * Math.sin(elevation) * Math.cos(angle);
-    sphere.position.y = distance * Math.sin(elevation) * Math.sin(angle);
-    sphere.position.z = distance * Math.cos(elevation);
+    // らせんの角度計算
+    const t = index / Math.max(completedExperiences.length - 1, 1);
+    const angle = t * spiralTurns * Math.PI * 2;
+    
+    // 高さの計算（下から上へ）
+    const height = (t - 0.5) * totalHeight;
+    
+    // 半径の変化（上に行くほど少し広がる）
+    const radiusVariation = baseRadius + t * 0.5;
+    
+    // ランダムな角度のずれ（±30度）
+    const angleOffset = (Math.random() - 0.5) * Math.PI / 3;
+    const finalAngle = angle + angleOffset;
+    
+    // 位置の計算
+    sphere.position.x = Math.cos(finalAngle) * radiusVariation;
+    sphere.position.y = height;
+    sphere.position.z = Math.sin(finalAngle) * radiusVariation;
+    
+    // ランダムな距離のずれ（±20%）
+    const distanceVariation = 0.8 + Math.random() * 0.4;
+    sphere.position.multiplyScalar(distanceVariation);
     
     // 難易度に応じてサイズを調整
     const scaleMultiplier = 0.8 + (exp.level || 1) * 0.2;

@@ -12,30 +12,63 @@ export const useThreeJSAnimation = () => {
   };
 
   // 球体のアニメーション
-  const animateSpheres = (meshesRef, hoveredMeshRef) => {
+  const animateSpheres = (meshesRef, hoveredMeshRef, scene) => {
     meshesRef.current.forEach((mesh, index) => {
       if (mesh.userData.type === 'completed') {
+        const baseScale = mesh.userData.originalScale || 1;
+        
         // ホバー時の特別なスケールアニメーション
         if (mesh === hoveredMeshRef.current && mesh.userData.hoverStartTime) {
           const hoverTime = (Date.now() - mesh.userData.hoverStartTime) * 0.005;
-          const hoverScale = 1.3 + Math.sin(hoverTime * 3) * 0.2;
+          const hoverScale = baseScale * (1.3 + Math.sin(hoverTime * 3) * 0.2);
           mesh.scale.setScalar(hoverScale);
           
           // ホバー時の回転効果
           mesh.rotation.y += 0.02;
           mesh.rotation.x += 0.01;
+          
+          // 発光強度を上げる
+          mesh.material.emissiveIntensity = 0.6 + Math.sin(hoverTime * 4) * 0.2;
+          if (mesh.userData.light) {
+            mesh.userData.light.intensity = 0.8 + Math.sin(hoverTime * 4) * 0.2;
+          }
         } else {
           // 通常のパルス
-          const pulseScale = 1 + Math.sin(Date.now() * 0.002 + index * 0.5) * 0.1;
+          const pulseScale = baseScale * (1 + Math.sin(Date.now() * 0.002 + index * 0.5) * 0.05);
           mesh.scale.setScalar(pulseScale);
-        }
-        
-        // ホバーしていない球体の発光を動的に変更
-        if (mesh !== hoveredMeshRef.current && mesh.material.emissiveIntensity !== undefined) {
-          mesh.material.emissiveIntensity = 0.1 + Math.sin(Date.now() * 0.003 + index) * 0.05;
+          
+          // 通常の発光
+          mesh.material.emissiveIntensity = 0.3 + Math.sin(Date.now() * 0.003 + index) * 0.1;
+          if (mesh.userData.light) {
+            mesh.userData.light.intensity = 0.5 + Math.sin(Date.now() * 0.003 + index) * 0.1;
+          }
         }
       } else if (mesh.userData.type === 'floating') {
         animateFloatingMission(mesh, hoveredMeshRef);
+      }
+    });
+    // キラキラパーティクルのアニメーション
+    animateSparkles(scene);
+  };
+
+  // キラキラパーティクルのアニメーション
+  const animateSparkles = (scene) => {
+    scene.traverse((object) => {
+      if (object.userData.isSparkle) {
+        const time = Date.now() * 0.001;
+        // スパークルの回転
+        object.rotation.x += 0.02;
+        object.rotation.y += 0.01;
+        object.rotation.z += 0.015;
+        
+        // スパークルの透明度をアニメーション
+        if (object.material) {
+          object.material.opacity = 0.3 + Math.sin(time * 5 + object.userData.phase) * 0.3;
+        }
+        
+        // スパークルのスケールをアニメーション
+        const scaleValue = 1 + Math.sin(time * 3 + object.userData.phase) * 0.2;
+        object.scale.setScalar(scaleValue);
       }
     });
   };
@@ -152,14 +185,12 @@ export const useThreeJSAnimation = () => {
         }
       }
       
-      // 糸のパーティクルアニメーション
-      if (object.userData.isThreadParticle) {
+      // 糸のパーティクルアニメーション（位置は固定、透明度のみ変化）
+      if (object.userData.isThreadParticle && !object.userData.isStatic) {
         const time = Date.now() * 0.001;
-        // パルス効果
+        // パルス効果のみ（位置は変更しない）
         object.material.opacity = object.userData.baseOpacity + 
           Math.sin(time * 2 + object.userData.phase) * 0.2;
-        // 微妙な上下動
-        object.position.y += Math.sin(time * 3 + object.userData.phase) * 0.001;
       }
     });
   };
@@ -167,6 +198,7 @@ export const useThreeJSAnimation = () => {
   return {
     animateStars,
     animateSpheres,
-    animateSceneParticles
+    animateSceneParticles,
+    animateSparkles
   };
 };
