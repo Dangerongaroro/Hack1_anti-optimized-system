@@ -30,8 +30,7 @@ class AIRecommendationService:
                     model="gemma-3-12b-it",
                     google_api_key=google_api_key
                 )
-                # 接続テスト
-                test_response = self.model.invoke([HumanMessage(content="Hello")])
+                # 接続テストを削除または遅延実行
                 self.enabled = True
                 print("✅ AI Service: LangChain + Gemini API initialized successfully")
             except Exception as e:
@@ -43,6 +42,20 @@ class AIRecommendationService:
             self.enabled = False
             print("⚠️ AI Service: No API key found or LangChain not available, running in fallback mode")
     
+    # 接続テストを別メソッドに分離
+    def lazy_test_connection(self) -> bool:
+        """必要時のみ接続テストを実行"""
+        if not self.enabled:
+            return False
+        
+        try:
+            message = HumanMessage(content="test")
+            response = self.model.invoke([message])
+            return True
+        except Exception as e:
+            print(f"AI connection test failed: {str(e)}")
+            return False
+
     def enhance_challenge_with_ai(self, challenge: Dict, user_analysis: Dict, user_experiences: List[Dict] = None) -> Dict:
         """AIでチャレンジを強化・パーソナライズ"""
         if not self.enabled:
