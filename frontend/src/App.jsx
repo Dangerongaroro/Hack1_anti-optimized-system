@@ -265,13 +265,14 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <ErrorBoundary>
-        <div className="mx-auto bg-white w-full relative pb-20 flex items-center justify-center">
+        <div className="mx-auto bg-white w-full max-w-screen-xl relative pb-20">
           {currentScreen === 'home' && (
             <HomeScreen
               experiences={experiences}
               userStats={userStats}
               onNavigateToRecommendation={navigateToRecommendation}
               onExperienceClick={setSelectedExperience}
+              onClearMission={handleClearMission}
             />
           )}
           {currentScreen === 'recommendation' && (
@@ -328,6 +329,7 @@ const App = () => {
           )}
         </div>
       </ErrorBoundary>
+
     </div>
   );
 };

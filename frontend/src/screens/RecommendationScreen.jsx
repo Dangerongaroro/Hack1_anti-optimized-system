@@ -1,6 +1,6 @@
 import IconRenderer from '../components/IconRenderer';
 import { X, RefreshCw, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const RecommendationScreen = ({ 
   currentChallenge, 
@@ -12,6 +12,16 @@ const RecommendationScreen = ({
   onClose 
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // 初回表示時はローディング状態として扱う
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  useEffect(() => {
+    // currentChallengeが初めてセットされたら初回ロード終了
+    if (currentChallenge) {
+      setIsInitialLoad(false);
+    }
+  }, [currentChallenge]);
 
   const handleGenerateChallenge = async () => {
     setIsGenerating(true);
@@ -36,9 +46,13 @@ const RecommendationScreen = ({
     }
   };
 
+  // ローディング中かどうかの判定
+  const isLoading = isGenerating || (!currentChallenge && isInitialLoad);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-6">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 w-full flex items-center justify-center">
+      {/* 常に同じ幅のコンテナを使用 */}
+      <div className="w-full max-w-lg px-4 sm:px-6">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-xl font-bold text-gray-800">今日のお題</h2>
           <button
@@ -78,17 +92,18 @@ const RecommendationScreen = ({
           </div>
         </div>
 
-        {/* お題カード（固定幅） */}
-        <div className="w-full max-w-md mx-auto">
-          {currentChallenge && !isGenerating ? (
-            <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-8 shadow-xl animate-fadeIn">
+        {/* お題カード部分 - 常に同じ構造を維持 */}
+        <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-6 sm:p-8 shadow-xl min-h-[500px]">
+          {!isLoading && currentChallenge ? (
+            // お題表示
+            <div className="animate-fadeIn">
               <div className="flex items-center justify-center mb-6">
                 <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center animate-pulse">
                   <IconRenderer iconName={currentChallenge.icon} className="w-10 h-10 text-purple-600" />
                 </div>
               </div>
               
-              <h3 className="text-2xl font-bold text-center mb-3 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h3 className="text-xl sm:text-2xl font-bold text-center mb-3 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 {currentChallenge.title}
               </h3>
               
@@ -160,8 +175,8 @@ const RecommendationScreen = ({
               </div>
             </div>
           ) : (
-            // ローディング状態（固定サイズ）
-            <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-8 shadow-xl h-[500px] flex items-center justify-center">
+            // ローディング表示
+            <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center justify-center">
                 <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-4"></div>
                 <p className="text-gray-600 text-center">新しいお題を考えています...</p>

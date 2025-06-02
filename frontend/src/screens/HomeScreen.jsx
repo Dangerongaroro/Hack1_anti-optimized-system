@@ -2,7 +2,7 @@ import React from 'react';
 import { TrendingUp, Calendar, Sparkles, Trophy } from 'lucide-react';
 import ExperienceStrings from '../components/ExperienceStrings';
 
-const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExperienceClick }) => {
+const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExperienceClick, onClearMission }) => {
   const safeExperiences = Array.isArray(experiences) ? experiences : [];
   const safeUserStats = userStats || {
     totalExperiences: 0,
@@ -83,6 +83,27 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
             <Trophy className="w-5 h-5" />
             テーマチャレンジに参加
           </button>
+        </div>
+
+        {/* 進行中ミッション一覧 */}
+        <div className="mt-6">
+          <h2 className="text-lg font-bold mb-2">進行中ミッション</h2>
+          <ul className="space-y-3">
+            {safeExperiences.filter(exp => !exp.completed).map(exp => (
+              <li key={exp.id} className="bg-white rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between shadow">
+                <div onClick={() => onExperienceClick(exp)} className="cursor-pointer flex-1">
+                  <div className="font-semibold text-gray-800">{exp.title}</div>
+                  <div className="text-xs text-gray-500">{exp.category} / レベル{exp.level}</div>
+                </div>
+                <button
+                  onClick={() => onClearMission(exp.id)}
+                  className="mt-2 md:mt-0 md:ml-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  達成した
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
