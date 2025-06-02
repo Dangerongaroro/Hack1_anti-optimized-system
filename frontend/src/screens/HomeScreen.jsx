@@ -87,27 +87,27 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
         </div>
 
         {/* 進行中ミッション一覧 */}
-        <div className="mt-6 px-4">
+        <div className="mt-6 px-4 pb-32">
           <h2 className="text-lg font-bold mb-4 text-gray-800">進行中ミッション</h2>
           <div className="space-y-3">
             {safeExperiences.filter(exp => !exp.completed).map(exp => (
               <div key={exp.id} className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col items-center gap-4">
                   <div 
                     onClick={() => onExperienceClick(exp)} 
-                    className="cursor-pointer flex-1 mr-4"
+                    className="cursor-pointer text-center w-full"
                   >
                     <div className="font-semibold text-gray-800 mb-1">{exp.title}</div>
                     <div className="text-sm text-gray-600">{exp.category} / レベル{exp.level}</div>
                   </div>
                   
-                  {/* おしゃれな達成ボタン */}
+                  {/* おしゃれな達成ボタン - 中央配置 */}
                   <button
                     onClick={() => onClearMission(exp.id)}
-                    className="group relative bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-2xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
+                    className="group relative bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                   >
                     {/* 背景の光る効果 */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none"></div>
                     
                     {/* アイコンとテキスト */}
                     <div className="relative z-10 flex items-center gap-2">
@@ -117,7 +117,7 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
                     </div>
                     
                     {/* ボタン押下時の波紋効果 */}
-                    <div className="absolute inset-0 bg-white/20 scale-0 group-active:scale-100 rounded-2xl transition-transform duration-150"></div>
+                    <div className="absolute inset-0 bg-white/20 scale-0 group-active:scale-100 rounded-2xl transition-transform duration-150 pointer-events-none"></div>
                   </button>
                 </div>
               </div>
@@ -145,10 +145,10 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
           {/* 体験記録ボタン */}
           <button
             onClick={onNavigateToJournalEntry}
-            className="group bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+            className="group bg-white/20 backdrop-blur-lg border border-white/30 text-blue-700 px-4 py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-white/30 transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
           >
             {/* 背景の光る効果 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             
             {/* アイコンとテキスト */}
             <Edit3 className="w-4 h-4 relative z-10 group-hover:rotate-12 transition-transform duration-300" />
@@ -161,10 +161,10 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
           {/* 新しいお題ボタン */}
           <button
             onClick={onNavigateToRecommendation}
-            className="group bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+            className="group bg-white/20 backdrop-blur-lg border border-white/30 text-purple-700 px-4 py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-white/30 transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
           >
             {/* 背景の光る効果 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             
             {/* アイコンとテキスト */}
             <Plus className="w-4 h-4 relative z-10 group-hover:rotate-90 transition-transform duration-300" />
