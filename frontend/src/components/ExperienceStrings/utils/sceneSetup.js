@@ -58,30 +58,49 @@ export const createCompletedSpheres = (scene, experiences, meshesRef) => {
   const spheres = [];
   
   completedExperiences.forEach((exp, index) => {
-    const geometry = new THREE.SphereGeometry(0.25, 32, 32);
+    // ジオメトリの最適化 - セグメント数を減らす
+    const geometry = new THREE.SphereGeometry(0.25, 16, 16);
     const colorHex = getThemeColor(exp.id, exp.category);
+    const color = new THREE.Color(colorHex);
     
+    // より発光感のあるマテリアル
     const material = new THREE.MeshStandardMaterial({ 
-      color: new THREE.Color(colorHex),
+      color: color,
       transparent: true,
-      opacity: 0.9,
-      metalness: 0.1,
-      roughness: 0.3,
-      emissive: new THREE.Color(colorHex).multiplyScalar(0.05),
-      emissiveIntensity: 0.1
+      opacity: 0.85,
+      metalness: 0.3,
+      roughness: 0.2,
+      emissive: color,
+      emissiveIntensity: 0.3
     });
     const sphere = new THREE.Mesh(geometry, material);
     
-    // 螺旋配置
-    const angle = (index / Math.max(completedExperiences.length, 1)) * Math.PI * 2;
-    const radius = 2.5;
-    const height = (index - completedExperiences.length / 2) * 0.4;
+    // ランダムな配置（発射角60度未満）
+    const angle = Math.random() * Math.PI * 2; // 方位角（0〜360度）
+    const elevation = Math.random() * (Math.PI / 3); // 仰角（0〜60度）
+    const distance = 1.5 + Math.random() * 2; // 距離（1.5〜3.5）
     
-    sphere.position.x = Math.cos(angle) * radius;
-    sphere.position.y = Math.sin(angle) * radius;
-    sphere.position.z = height;
+    // 球面座標から直交座標へ変換
+    sphere.position.x = distance * Math.sin(elevation) * Math.cos(angle);
+    sphere.position.y = distance * Math.sin(elevation) * Math.sin(angle);
+    sphere.position.z = distance * Math.cos(elevation);
     
-    sphere.userData = { experience: exp, type: 'completed' };
+    // 難易度に応じてサイズを調整
+    const scaleMultiplier = 0.8 + (exp.level || 1) * 0.2;
+    sphere.scale.setScalar(scaleMultiplier);
+    
+    sphere.userData = { 
+      experience: exp, 
+      type: 'completed',
+      originalScale: scaleMultiplier,
+      glowColor: color
+    };
+    
+    // グロー効果のためのポイントライト
+    const light = new THREE.PointLight(color, 0.5, 2);
+    light.position.copy(sphere.position);
+    sphere.userData.light = light;
+    scene.add(light);
     
     scene.add(sphere);
     spheres.push(sphere);
