@@ -237,13 +237,96 @@ const api = {
     } catch (error) {
       console.error('API初期化エラー:', error);
     }
-  }
+  },
+
+  // ビジュアライゼーションAPI
+  getVisualizationData: async (experiences) => {
+    if (!api.getAIEnabled()) {
+      console.log('🤖 AI disabled, skipping server-side visualization');
+      return null;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/visualization/experience-strings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(experiences)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Visualization data received from server');
+      return result.data;
+    } catch (error) {
+      console.error('❌ Server-side visualization failed:', error);
+      return null; // フォールバックとしてクライアント側計算を使用
+    }
+  },
+
+  getSpiralPositions: async (experiences) => {
+    if (!api.getAIEnabled()) return null;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/visualization/spiral-positions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(experiences)
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('❌ Spiral positions fetch failed:', error);
+      return null;
+    }
+  },
+
+  getFloatingPositions: async (experiences) => {
+    if (!api.getAIEnabled()) return null;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/visualization/floating-positions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(experiences)
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('❌ Floating positions fetch failed:', error);
+      return null;
+    }
+  },
+
+  getConnectionCurves: async (spiralPositions) => {
+    if (!api.getAIEnabled()) return null;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/visualization/connection-curves`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spiralPositions)
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('❌ Connection curves fetch failed:', error);
+      return null;
+    }
+  },
 };
 
-// useEffectを削除
-// ❌ 削除対象
-// useEffect(() => {
-//   // 初期化処理
-// }, []);
-
+// 正しいエクスポート
 export default api;
+export { api };

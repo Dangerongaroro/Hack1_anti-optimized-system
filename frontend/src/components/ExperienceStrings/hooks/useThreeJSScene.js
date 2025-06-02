@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createStarField, setupLighting, createCompletedSpheres, createFloatingMissions } from '../utils/sceneSetup';
 import { createConnectionThreads } from '../utils/connectionThreads';
+import { createServerBasedSpheres, createServerBasedFloatingMissions, createServerBasedConnectionThreads } from '../utils/serverBasedSceneSetup';
 import { useThreeJSAnimation } from './useThreeJSAnimation';
+import { useServerVisualization } from './useServerVisualization';
 import { animateParticles } from '../effects/particleEffects';
 
 export const useThreeJSScene = (experiences) => {
@@ -15,6 +17,7 @@ export const useThreeJSScene = (experiences) => {
   const hoveredMeshRef = useRef(null);
   
   const { animateStars, animateSpheres, animateSceneParticles } = useThreeJSAnimation();
+  const { visualizationData, useServerData } = useServerVisualization(experiences);
 
   const initializeScene = (canvas) => {
     const rect = canvas.getBoundingClientRect();
@@ -54,14 +57,23 @@ export const useThreeJSScene = (experiences) => {
         }
       }
       scene.remove(child);
-    }
-
-    // シーン要素を作成
+    }    // シーン要素を作成
     const stars = createStarField(scene);
     setupLighting(scene);
-    const spheres = createCompletedSpheres(scene, experiences, meshesRef);
-    createConnectionThreads(scene, spheres);
-    createFloatingMissions(scene, experiences, meshesRef);
+    
+    // サーバー側データまたはクライアント側計算を使用
+    let spheres;
+    if (useServerData && visualizationData) {
+      console.log('🖥️ Using server-side visualization data');
+      spheres = createServerBasedSpheres(scene, visualizationData, meshesRef);
+      createServerBasedConnectionThreads(scene, visualizationData);
+      createServerBasedFloatingMissions(scene, visualizationData, meshesRef);
+    } else {
+      console.log('💻 Using client-side calculations');
+      spheres = createCompletedSpheres(scene, experiences, meshesRef);
+      createConnectionThreads(scene, spheres);
+      createFloatingMissions(scene, experiences, meshesRef);
+    }
     
     return { scene, camera, renderer, stars };
   };
