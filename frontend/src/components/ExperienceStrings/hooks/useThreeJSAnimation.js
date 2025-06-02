@@ -76,46 +76,66 @@ export const useThreeJSAnimation = () => {
   // 浮遊ミッションのアニメーション
   const animateFloatingMission = (mesh, hoveredMeshRef) => {
     const time = Date.now() * 0.0008;
-    const baseAngle = (mesh.userData.index / Math.max(1, 1)) * Math.PI * 2;
-    const floatRadius = 4.0 + Math.sin(time * 0.5 + mesh.userData.index) * 0.5;
-    const verticalFloat = Math.sin(time * 0.7 + mesh.userData.index * 1.5) * 1.5;
     
-    const newPos = new THREE.Vector3(
-      Math.cos(baseAngle + time * 0.15) * floatRadius,
-      Math.sin(baseAngle + time * 0.15) * floatRadius,
-      verticalFloat
-    );
+    // 位置は一切変更しない（初期位置のまま固定）
+    // アニメーションは回転とスケールのみ
     
-    // ホバー時の特別なアニメーション
-    if (mesh === hoveredMeshRef.current && mesh.userData.hoverStartTime) {
+    const isCurrentlyHovered = mesh === hoveredMeshRef.current;
+    
+    // 常時回転（浮遊ミッション用）
+    const floatRotationSpeed = 0.008 + (mesh.userData.index % 4) * 0.003;
+    mesh.rotation.x += floatRotationSpeed;
+    mesh.rotation.y += floatRotationSpeed * 0.7;
+    mesh.rotation.z += floatRotationSpeed * 0.4;
+    
+    // ホバー状態の安定化
+    if (isCurrentlyHovered) {
+      if (!mesh.userData.hoverStartTime) {
+        mesh.userData.hoverStartTime = Date.now();
+        mesh.userData.isHovering = true;
+      }
+      mesh.userData.hoverEndTime = null;
+    } else {
+      if (mesh.userData.isHovering) {
+        if (!mesh.userData.hoverEndTime) {
+          mesh.userData.hoverEndTime = Date.now();
+        } else if (Date.now() - mesh.userData.hoverEndTime > 150) { // 150ms遅延
+          mesh.userData.hoverStartTime = null;
+          mesh.userData.hoverEndTime = null;
+          mesh.userData.isHovering = false;
+        }
+      }
+    }
+    
+    // アニメーション実行（位置変更なし）
+    if (mesh.userData.isHovering && mesh.userData.hoverStartTime) {
+      // ホバー中の特別なアニメーション
       const hoverTime = (Date.now() - mesh.userData.hoverStartTime) * 0.008;
       const hoverScale = 1.5 + Math.sin(hoverTime * 4) * 0.3;
       mesh.scale.setScalar(hoverScale);
       
-      // ホバー時の振動効果
-      newPos.add(new THREE.Vector3(
-        Math.sin(hoverTime * 8) * 0.1,
-        Math.cos(hoverTime * 8) * 0.1,
-        Math.sin(hoverTime * 6) * 0.05
-      ));
+      // ホバー時の追加回転効果
+      mesh.rotation.x += 0.05;
+      mesh.rotation.y += 0.04;
+      mesh.rotation.z += 0.06;
       
-      // ホバー時の回転効果
-      mesh.rotation.z += 0.03;
+      // ホバー時の発光
+      if (mesh.material.emissiveIntensity !== undefined) {
+        mesh.material.emissiveIntensity = 0.8 + Math.sin(hoverTime * 4) * 0.2;
+      }
     } else {
-      // 通常のパルス
+      // 通常のパルス（スケールのみ）
       const pulseSize = 1 + Math.sin(time * 2 + mesh.userData.index * 2) * 0.2;
       mesh.scale.setScalar(pulseSize);
+      
+      // 通常の発光
+      if (mesh.material.emissiveIntensity !== undefined) {
+        mesh.material.emissiveIntensity = 0.3 + Math.sin(time * 4 + mesh.userData.index) * 0.2;
+      }
     }
     
-    // トレイル効果の処理
-    updateTrailEffect(mesh);
-    
-    mesh.position.copy(newPos);
-    
-    // 材質の発光を動的に変更
-    if (mesh !== hoveredMeshRef.current && mesh.material.emissiveIntensity !== undefined) {
-      mesh.material.emissiveIntensity = 0.3 + Math.sin(time * 4 + mesh.userData.index) * 0.2;
-    }
+    // トレイル効果は停止（位置固定なので不要）
+    // updateTrailEffect(mesh); // コメントアウト
   };
 
   // トレイル効果の更新
@@ -164,14 +184,16 @@ export const useThreeJSAnimation = () => {
     });
   };
 
-  // パーティクルのアニメーション
+  // パーティクルのアニメーション（浮遊ミッション位置変更を停止）
   const animateSceneParticles = (scene) => {
     scene.traverse((object) => {
-      if (object.userData.parentMission) {
+      // 浮遊ミッション本体の位置は変更しない
+      if (object.userData.parentMission && object.userData.isParticle) {
         const time = Date.now() * object.userData.speed * 0.8;
         const parent = object.userData.parentMission;
         const offset = object.userData.offset;
         
+        // パーティクルのみ親の周りで動く
         object.position.copy(parent.position);
         object.position.add(new THREE.Vector3(
           offset.x * Math.sin(time),
@@ -186,11 +208,15 @@ export const useThreeJSAnimation = () => {
       }
       
       // 糸のパーティクルアニメーション（位置は固定、透明度のみ変化）
-      if (object.userData.isThreadParticle && !object.userData.isStatic) {
+      if (object.userData.isThreadParticle && object.userData.baseOpacity !== undefined) {
         const time = Date.now() * 0.001;
         // パルス効果のみ（位置は変更しない）
-        object.material.opacity = object.userData.baseOpacity + 
-          Math.sin(time * 2 + object.userData.phase) * 0.2;
+        if (object.material) {
+          const phase = object.userData.phase || 0;
+          object.material.opacity = Math.max(0.1, 
+            object.userData.baseOpacity + Math.sin(time * 2 + phase) * 0.2
+          );
+        }
       }
     });
   };
