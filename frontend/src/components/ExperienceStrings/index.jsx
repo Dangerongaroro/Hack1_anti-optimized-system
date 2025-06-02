@@ -83,8 +83,8 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
           <div 
             className="absolute z-20 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 pointer-events-none border border-purple-200/50"
             style={{
-              left: mousePos.x + 10,
-              top: mousePos.y - 10,
+              left: `${mousePos.x + 10}px`,
+              top: `${mousePos.y - 10}px`,
               transform: 'translate(0, -100%)'
             }}
           >
@@ -92,11 +92,14 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
               {hoveredExperience.title}
             </h4>
             <p className="text-xs text-gray-600 mb-2">
-              {hoveredExperience.description}
+              {hoveredExperience.description || `${hoveredExperience.category}の体験`}
             </p>
             <div className="flex items-center gap-2">
               <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
                 {hoveredExperience.category}
+              </span>
+              <span className="text-xs px-2 py-1 bg-pink-100 text-pink-700 rounded-full">
+                レベル {hoveredExperience.level || 1}
               </span>
               {hoveredExperience.completed && (
                 <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">

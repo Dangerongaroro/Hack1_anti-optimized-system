@@ -3,9 +3,34 @@ import { generateChallengeLocal } from '../utils/helpers.js';
 // API設定
 const API_BASE_URL = 'http://localhost:8000/api';
 
+const CACHE_DURATION = 5 * 60 * 1000; // 5分
+const requestCache = new Map();
+
 const api = {
-  // 強化されたレコメンド取得
+  // AI機能の有効/無効切り替え
+  getAIEnabled: () => {
+    return localStorage.getItem('aiEnabled') !== 'false'; // デフォルトはtrue
+  },
+  
+  setAIEnabled: (enabled) => {
+    localStorage.setItem('aiEnabled', enabled.toString());
+  },
+
+  // 条件付きレコメンド取得
   getRecommendation: async (level, userPreferences, experiences = []) => {
+    if (!api.getAIEnabled()) {
+      console.log('🤖 AI disabled, using local recommendation');
+      return generateChallengeLocal(level);
+    }
+    
+    const cacheKey = `rec_${level}_${JSON.stringify(userPreferences)}_${experiences.length}`;
+    const cached = requestCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      console.log('📦 Using cached recommendation');
+      return cached.data;
+    }
+    
     try {
       const response = await fetch(`${API_BASE_URL}/recommendations`, {
         method: 'POST',
@@ -13,7 +38,7 @@ const api = {
         body: JSON.stringify({ 
           level, 
           preferences: userPreferences || {},
-          experiences: experiences.slice(-20) // 最近20件の体験を送信
+          experiences: experiences.slice(-10) // 最近10件のみ送信
         })
       });
       
@@ -22,6 +47,7 @@ const api = {
       }
       
       const result = await response.json();
+      requestCache.set(cacheKey, { data: result, timestamp: Date.now() });
       console.log('✅ Personalized recommendation received:', result);
       return result;
     } catch (error) {
@@ -211,13 +237,96 @@ const api = {
     } catch (error) {
       console.error('API初期化エラー:', error);
     }
-  }
+  },
+
+  // ビジュアライゼーションAPI
+  getVisualizationData: async (experiences) => {
+    if (!api.getAIEnabled()) {
+      console.log('🤖 AI disabled, skipping server-side visualization');
+      return null;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/visualization/experience-strings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(experiences)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Visualization data received from server');
+      return result.data;
+    } catch (error) {
+      console.error('❌ Server-side visualization failed:', error);
+      return null; // フォールバックとしてクライアント側計算を使用
+    }
+  },
+
+  getSpiralPositions: async (experiences) => {
+    if (!api.getAIEnabled()) return null;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/visualization/spiral-positions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(experiences)
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('❌ Spiral positions fetch failed:', error);
+      return null;
+    }
+  },
+
+  getFloatingPositions: async (experiences) => {
+    if (!api.getAIEnabled()) return null;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/visualization/floating-positions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(experiences)
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('❌ Floating positions fetch failed:', error);
+      return null;
+    }
+  },
+
+  getConnectionCurves: async (spiralPositions) => {
+    if (!api.getAIEnabled()) return null;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/visualization/connection-curves`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spiralPositions)
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('❌ Connection curves fetch failed:', error);
+      return null;
+    }
+  },
 };
 
-// useEffectを削除
-// ❌ 削除対象
-// useEffect(() => {
-//   // 初期化処理
-// }, []);
-
+// 正しいエクスポート
 export default api;
+export { api };

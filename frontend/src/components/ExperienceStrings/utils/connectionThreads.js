@@ -9,17 +9,21 @@ export const createConnectionThreads = (scene, spheres) => {
     const start = spheres[i].position;
     const end = spheres[i + 1].position;
     
-    // 曲線の作成
+    // 曲線の作成 - 固定された制御点を使用
     const distance = start.distanceTo(end);
     const midPoint = new THREE.Vector3();
     midPoint.addVectors(start, end);
     midPoint.multiplyScalar(0.5);
     
+    // シード値を使って一貫した変位を生成
+    const seed = spheres[i].userData.experience.id + spheres[i + 1].userData.experience.id;
+    const pseudoRandom = (seed % 1000) / 1000; // 0-1の固定値
+    
     const bulge = distance * 0.3;
     midPoint.add(new THREE.Vector3(
-      (Math.random() - 0.5) * bulge,
-      (Math.random() - 0.5) * bulge,
-      (Math.random() - 0.5) * bulge
+      (pseudoRandom - 0.5) * bulge,
+      (pseudoRandom * 0.7 - 0.35) * bulge,
+      (pseudoRandom * 0.3 - 0.15) * bulge
     ));
     
     const curve = new THREE.CatmullRomCurve3([
@@ -77,15 +81,18 @@ export const createConnectionThreads = (scene, spheres) => {
       quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
       cylinder.quaternion.copy(quaternion);
       
+      // 糸が動かないように固定
+      cylinder.userData = { isConnectionThread: true, isStatic: true };
+      
       scene.add(cylinder);
     }
     
-    // 糸に沿ってパーティクルを配置
+    // 糸に沿ってパーティクルを配置（固定位置）
     createThreadParticles(scene, curve, spheres[i], spheres[i + 1], distance);
   }
 };
 
-// 糸に沿ったパーティクル作成
+// 糸に沿った固定パーティクル作成
 const createThreadParticles = (scene, curve, startSphere, endSphere, distance) => {
   const particleCount = Math.floor(distance * 3);
   for (let j = 0; j < particleCount; j++) {
@@ -109,7 +116,8 @@ const createThreadParticles = (scene, curve, startSphere, endSphere, distance) =
     particle.userData = {
       isThreadParticle: true,
       baseOpacity: 0.6,
-      phase: Math.random() * Math.PI * 2
+      phase: (j / particleCount) * Math.PI * 2,
+      isStatic: true // 位置を固定
     };
     scene.add(particle);
   }

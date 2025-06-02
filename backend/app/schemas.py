@@ -69,3 +69,44 @@ class GrowthAnalysisResponse(BaseModel):
     next_challenges: List[str]
     diversity_score: float
     category_distribution: Dict[str, int]
+
+class VisualizationPosition(BaseModel):
+    """3D位置情報"""
+    x: float
+    y: float 
+    z: float
+
+class VisualizationExperience(BaseModel):
+    """ビジュアライゼーション用の体験データ"""
+    experience_id: Optional[int] = None
+    position: VisualizationPosition
+    color: str
+    scale: Optional[float] = None
+    seed: Optional[int] = None
+    index: int
+    type: str
+
+class ConnectionCurve(BaseModel):
+    """接続曲線データ"""
+    start_id: Optional[int]
+    end_id: Optional[int]
+    points: List[VisualizationPosition]
+    start_color: str
+    end_color: str
+    distance: float
+
+class VisualizationStats(BaseModel):
+    """ビジュアライゼーション統計"""
+    total_experiences: int
+    completed_count: int
+    incomplete_count: int
+    categories: Dict[str, int]
+
+class VisualizationDataResponse(BaseModel):
+    """ビジュアライゼーションデータのレスポンス"""
+    status: str
+    data: Dict[str, Any]
+    spiral_positions: Optional[List[VisualizationExperience]] = None
+    floating_positions: Optional[List[VisualizationExperience]] = None
+    connection_curves: Optional[List[ConnectionCurve]] = None
+    stats: Optional[VisualizationStats] = None

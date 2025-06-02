@@ -78,12 +78,12 @@ const App = () => {
     }
   }, []);
 
-  // 全レベルのお題を生成する関数
+  // 全レベルのお題を生成する関数（依存配列を修正）
   const generateAllLevelChallenges = useCallback(async () => {
     console.log('🎯 全レベルのお題生成を開始');
     setChallengesInitialized(false);
     
-    const newChallenges = { ...challengesByLevel };
+    const newChallenges = {};
     
     for (let level = 1; level <= 3; level++) {
       try {
@@ -99,7 +99,17 @@ const App = () => {
     setChallengesByLevel(newChallenges);
     setCurrentChallenge(newChallenges[selectedLevel]);
     setChallengesInitialized(true);
-  }, [userPreferences, experiences, challengesByLevel, selectedLevel]);
+  }, [userPreferences, experiences, selectedLevel]); // challengesByLevelを削除
+
+  // 初期化フラグを追加
+  const [initializedOnce, setInitializedOnce] = useState(false);
+
+  useEffect(() => {
+    if (userPreferences?.setupCompleted && experiences && !initializedOnce) {
+      generateAllLevelChallenges();
+      setInitializedOnce(true);
+    }
+  }, [userPreferences, experiences, initializedOnce, generateAllLevelChallenges]);
 
   useEffect(() => {
     if (userPreferences && experiences && userPreferences.setupCompleted) {

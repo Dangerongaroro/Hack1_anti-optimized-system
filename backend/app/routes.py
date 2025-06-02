@@ -10,6 +10,7 @@ from .services import (
     analyze_growth_trends,
     serendipity_engine
 )
+from .services.visualization_service import VisualizationService
 # 既存のインポートに追加
 from .schemas import (
     RecommendationRequest, 
@@ -24,6 +25,9 @@ from .schemas import (
 )
 
 router = APIRouter()
+
+# VisualizationServiceのインスタンス化
+visualization_service = VisualizationService()
 # 新しいエンドポイントを追加
 @router.get("/themes/active", response_model=List[ThemeChallengeResponse])
 async def get_active_themes():
@@ -213,3 +217,51 @@ async def health_check():
         "engine_version": "2.0",
         "features": ["personalization", "learning", "anti-optimization"]
     }
+
+@router.post("/visualization/experience-strings")
+async def get_experience_strings_visualization(experiences: List[Dict[str, Any]]):
+    """ExperienceStringsの3Dビジュアライゼーションデータを取得"""
+    try:
+        visualization_data = visualization_service.generate_visualization_data(experiences)
+        return {
+            "status": "success",
+            "data": visualization_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"ビジュアライゼーション生成エラー: {str(e)}")
+
+@router.post("/visualization/spiral-positions")
+async def get_spiral_positions(experiences: List[Dict[str, Any]]):
+    """完了済み体験のらせん配置データを取得"""
+    try:
+        spiral_positions = visualization_service.compute_spiral_positions(experiences)
+        return {
+            "status": "success",
+            "data": spiral_positions
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"らせん位置計算エラー: {str(e)}")
+
+@router.post("/visualization/floating-positions") 
+async def get_floating_positions(experiences: List[Dict[str, Any]]):
+    """進行中ミッションの浮遊配置データを取得"""
+    try:
+        floating_positions = visualization_service.compute_floating_positions(experiences)
+        return {
+            "status": "success",
+            "data": floating_positions
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"浮遊位置計算エラー: {str(e)}")
+
+@router.post("/visualization/connection-curves")
+async def get_connection_curves(spiral_positions: List[Dict[str, Any]]):
+    """球体間の接続曲線データを取得"""
+    try:
+        connection_curves = visualization_service.compute_connection_curves(spiral_positions)
+        return {
+            "status": "success",
+            "data": connection_curves
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"接続曲線計算エラー: {str(e)}")
