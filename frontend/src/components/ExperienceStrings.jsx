@@ -1,5 +1,6 @@
 // 完全に書き直したExperienceStrings.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import * as THREE from 'three';
 
 const idToColor = (id) => {
   let hash = 0;
@@ -7,11 +8,49 @@ const idToColor = (id) => {
   for (let i = 0; i < strId.length; i++) {
     hash = strId.charCodeAt(i) + ((hash << 5) - hash);
   }
-  // 数値を正規化して小数点以下を制限
-  const hue = Math.round(Math.abs(hash * 137.508) % 360);
-  const saturation = Math.round(70 + (Math.abs(hash) % 20));
-  const lightness = Math.round(50 + (Math.abs(hash) % 10));
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  
+  // より美しいパステル調の色相範囲に制限
+  const colorRanges = [
+    { min: 250, max: 280 }, // 淡い紫〜青紫系
+    { min: 200, max: 230 }, // 淡い青系
+    { min: 300, max: 330 }, // 淡いピンク〜マゼンタ系
+    { min: 180, max: 210 }  // 淡いシアン系
+  ];
+  
+  // ハッシュ値から色相範囲を選択
+  const rangeIndex = Math.abs(hash) % colorRanges.length;
+  const selectedRange = colorRanges[rangeIndex];
+  
+  // 選択された範囲内で色相を決定
+  const hue = Math.abs(hash * 137.508) % (selectedRange.max - selectedRange.min) + selectedRange.min;
+  
+  // より柔らかい彩度と明度に調整
+  const saturation = Math.round(40 + (Math.abs(hash) % 20)); // 40-60%（より淡く）
+  const lightness = Math.round(70 + (Math.abs(hash) % 15));  // 70-85%（より明るく）
+  
+  return `hsl(${Math.round(hue)}, ${saturation}%, ${lightness}%)`;
+};
+
+// テーマカラー取得関数を更新
+const getThemeColor = (id, category = null) => {
+  // より美しいパステル調のカテゴリーカラー
+  const categoryColors = {
+    "ライフスタイル": "#6EE7B7",    // 淡い緑
+    "アート・創作": "#C4B5FD",     // 淡い紫
+    "料理・グルメ": "#FDE68A",     // 淡い黄色
+    "ソーシャル": "#F9A8D4",       // 淡いピンク
+    "学習・読書": "#93C5FD",       // 淡い青
+    "自然・アウトドア": "#86EFAC",  // 淡いグリーン
+    "エンタメ": "#FDBA74"          // 淡いオレンジ
+  };
+  
+  // カテゴリーが指定されていて、マッピングが存在する場合はそれを使用
+  if (category && categoryColors[category]) {
+    return categoryColors[category];
+  }
+  
+  // それ以外はIDベースの色を生成
+  return idToColor(id);
 };
 
 const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
@@ -21,6 +60,14 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [animationFrame, setAnimationFrame] = useState(0);
   const [floatingMissions, setFloatingMissions] = useState([]);
+  
+  // Three.jsの参照を保持
+  const sceneRef = useRef(null);
+  const cameraRef = useRef(null);
+  const rendererRef = useRef(null);
+  const raycasterRef = useRef(null);
+  const mouseRef = useRef(new THREE.Vector2());
+  const meshesRef = useRef([]);
 
   // アニメーションループ
   useEffect(() => {
@@ -42,255 +89,376 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     setFloatingMissions(incompleteMissions);
   }, [experiences]);
 
-  // 芸術的な螺旋パスを生成
-  const generateArtisticPaths = (width, height) => {
-    const paths = [];
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const baseRadius = Math.min(width, height) * 0.25;
+  // マウス移動時の処理を改善
+  const handleMouseMove = (e) => {
+    if (!canvasRef.current) return;
     
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // マウス座標を更新（ツールチップ用）
+    setMousePos({ x, y });
+    
+    // Three.js用の正規化座標
+    mouseRef.current.x = (x / rect.width) * 2 - 1;
+    mouseRef.current.y = -(y / rect.height) * 2 + 1;
+    
+    // レイキャスティングでホバー判定
+    if (raycasterRef.current && cameraRef.current && meshesRef.current.length > 0) {
+      raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
+      const intersects = raycasterRef.current.intersectObjects(meshesRef.current);
+      
+      if (intersects.length > 0) {
+        const hoveredObject = intersects[0].object;
+        if (hoveredObject.userData && hoveredObject.userData.experience) {
+          setHoveredExperience(hoveredObject.userData.experience);
+          canvasRef.current.style.cursor = 'pointer';
+        }
+      } else {
+        setHoveredExperience(null);
+        canvasRef.current.style.cursor = 'default';
+      }
+    }
+  };
+
+  // クリック処理を改善
+  const handleCanvasClick = (e) => {
+    if (!canvasRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Three.js用の正規化座標
+    mouseRef.current.x = (x / rect.width) * 2 - 1;
+    mouseRef.current.y = -(y / rect.height) * 2 + 1;
+    
+    // レイキャスティングでクリック判定
+    if (raycasterRef.current && cameraRef.current && meshesRef.current.length > 0) {
+      raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
+      const intersects = raycasterRef.current.intersectObjects(meshesRef.current);
+      
+      if (intersects.length > 0) {
+        const clickedObject = intersects[0].object;
+        if (clickedObject.userData && clickedObject.userData.experience && onExperienceClick) {
+          onExperienceClick(clickedObject.userData.experience);
+        }
+      }
+    }
+  };
+
+  // Canvas描画部分を改善
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, rect.width / rect.height, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ 
+      canvas: canvas, 
+      alpha: true,
+      antialias: true
+    });
+    
+    // 参照を保存
+    sceneRef.current = scene;
+    cameraRef.current = camera;
+    rendererRef.current = renderer;
+    raycasterRef.current = new THREE.Raycaster();
+    raycasterRef.current.params.Points.threshold = 0.5; // クリック判定の閾値を調整
+    
+    renderer.setSize(rect.width, rect.height);
+    renderer.setClearColor(0x000000, 0);
+    camera.position.z = 5;
+    
+    // メッシュ配列をクリア
+    meshesRef.current = [];
+    
+    // シーンをクリア
+    while(scene.children.length > 0) {
+      const child = scene.children[0];
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) {
+        if (Array.isArray(child.material)) {
+          child.material.forEach(m => m.dispose());
+        } else {
+          child.material.dispose();
+        }
+      }
+      scene.remove(child);
+    }
+
+    // 照明を追加（より柔らかく）
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(5, 5, 5);
+    scene.add(directionalLight);
+    
+    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+    directionalLight2.position.set(-5, 3, 5);
+    scene.add(directionalLight2);
+    
+    // 完了済み体験を3D球体で表現
     const completedExperiences = experiences.filter(exp => exp.completed);
+    const spheres = [];
     
     completedExperiences.forEach((exp, index) => {
-      const angle = (index / completedExperiences.length) * Math.PI * 2;
-      const spiralFactor = index * 0.15;
-      const radius = baseRadius * (1 + spiralFactor * 0.1);
+      // より大きな球体にして判定しやすくする
+      const geometry = new THREE.SphereGeometry(0.35, 32, 32);
       
-      const animOffset = animationFrame * 0.005;
-      const x = centerX + Math.cos(angle + animOffset) * radius;
-      const y = centerY + Math.sin(angle + animOffset) * radius - index * 15;
+      const colorHex = getThemeColor(exp.id, exp.category);
       
-      paths.push({
-        x, y,
-        exp,
-        color: idToColor(exp.id),
-        angle,
-        radius,
-        index
+      const material = new THREE.MeshStandardMaterial({ 
+        color: new THREE.Color(colorHex),
+        transparent: true,
+        opacity: 0.9,
+        metalness: 0.1,
+        roughness: 0.3,
+        emissive: new THREE.Color(colorHex).multiplyScalar(0.05),
+        emissiveIntensity: 0.1
       });
+      const sphere = new THREE.Mesh(geometry, material);
+      
+      // 螺旋配置
+      const angle = (index / Math.max(completedExperiences.length, 1)) * Math.PI * 2;
+      const radius = 2.5;
+      const height = (index - completedExperiences.length / 2) * 0.4;
+      
+      sphere.position.x = Math.cos(angle) * radius;
+      sphere.position.y = Math.sin(angle) * radius;
+      sphere.position.z = height;
+      
+      sphere.userData = { experience: exp, type: 'completed' };
+      
+      scene.add(sphere);
+      spheres.push(sphere);
+      meshesRef.current.push(sphere); // レイキャスト用の配列に追加
     });
     
-    return paths;
-  };
-
-  // 美しい糸の描画
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || experiences.length === 0) return;
-
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const width = rect.width || 400;
-    const height = 500;
-    
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-    ctx.scale(dpr, dpr);
-    
-    // 背景のグラデーション
-    const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-    bgGradient.addColorStop(0, 'rgba(237, 233, 254, 0.3)');
-    bgGradient.addColorStop(0.5, 'rgba(251, 207, 232, 0.2)');
-    bgGradient.addColorStop(1, 'rgba(219, 234, 254, 0.3)');
-    ctx.fillStyle = bgGradient;
-    ctx.fillRect(0, 0, width, height);
-
-    // パスを生成
-    const paths = generateArtisticPaths(width, height);
-
-    // 糸を描画
-    for (let i = 0; i < paths.length - 1; i++) {
-      const current = paths[i];
-      const next = paths[i + 1];
-      
-      const gradient = ctx.createLinearGradient(current.x, current.y, next.x, next.y);
-      gradient.addColorStop(0, current.color);
-      gradient.addColorStop(1, next.color);
-      
-      ctx.beginPath();
-      ctx.moveTo(current.x, current.y);
-      
-      const waveOffset = Math.sin(animationFrame * 0.01 + i * 0.5) * 30;
-      const controlOffset = Math.cos(animationFrame * 0.008 + i * 0.3) * 40;
-      
-      ctx.bezierCurveTo(
-        current.x + controlOffset, current.y + waveOffset,
-        next.x - controlOffset, next.y - waveOffset,
-        next.x, next.y
-      );
-      
-      ctx.strokeStyle = gradient;
-      ctx.lineWidth = 3 + Math.sin(animationFrame * 0.02 + i) * 1;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-      
-      // 光の筋
-      ctx.globalAlpha = 0.3;
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-
-    // 完了済みノードを描画
-    paths.forEach((path, index) => {
-      const pulseSize = 1 + Math.sin(animationFrame * 0.05 + index * 0.5) * 0.3;
-      const nodeSize = 8 + pulseSize * 2;
-      
-      // グロー効果 - 色値を正しい形式に修正
-      const baseColor = path.color;
-      const glowGradient = ctx.createRadialGradient(path.x, path.y, 0, path.x, path.y, nodeSize * 3);
-      
-      // HSL色からHSLAに変換して透明度を追加
-      const colorWithAlpha = baseColor.replace('hsl(', 'hsla(').replace(')', ', 0.27)');
-      const colorWithLightAlpha = baseColor.replace('hsl(', 'hsla(').replace(')', ', 0.13)');
-      
-      glowGradient.addColorStop(0, colorWithAlpha);
-      glowGradient.addColorStop(0.5, colorWithLightAlpha);
-      glowGradient.addColorStop(1, 'transparent');
-      
-      ctx.fillStyle = glowGradient;
-      ctx.fillRect(path.x - nodeSize * 3, path.y - nodeSize * 3, nodeSize * 6, nodeSize * 6);
-      
-      // メインノード
-      ctx.beginPath();
-      ctx.arc(path.x, path.y, nodeSize, 0, Math.PI * 2);
-      ctx.fillStyle = path.color;
-      ctx.fill();
-      
-      // 白い境界線
-      ctx.beginPath();
-      ctx.arc(path.x, path.y, nodeSize, 0, Math.PI * 2);
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    });
-
-    // 浮遊する未完了ミッションを描画
-    const centerX = width / 2;
-    const centerY = height / 2;
-    
-    floatingMissions.forEach((mission, index) => {
-      const time = animationFrame * mission.speed;
-      const floatRadius = 150 + Math.sin(time + mission.phase) * 30;
-      const angle = time + mission.phase;
-      
-      const x = centerX + Math.cos(angle) * floatRadius + mission.floatX;
-      const y = centerY + Math.sin(angle) * floatRadius + mission.floatY;
-      
-      // 接続線（薄い）
-      if (paths.length > 0) {
-        const nearestPath = paths[paths.length - 1];
-        ctx.beginPath();
-        ctx.moveTo(nearestPath.x, nearestPath.y);
-        ctx.lineTo(x, y);
+    // 美しいグラデーション糸を3D線で表現
+    if (spheres.length > 1) {
+      for (let i = 0; i < spheres.length - 1; i++) {
+        const points = [
+          spheres[i].position.clone(),
+          spheres[i + 1].position.clone()
+        ];
         
-        const baseColor = mission.color || idToColor(mission.id);
-        const lineColorWithAlpha = baseColor.replace('hsl(', 'hsla(').replace(')', ', 0.2)');
-        ctx.strokeStyle = lineColorWithAlpha;
-        ctx.lineWidth = 1;
-        ctx.setLineDash([5, 10]);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        // 糸の中間点を追加してより滑らかな曲線に
+        const midPoint = new THREE.Vector3();
+        midPoint.addVectors(spheres[i].position, spheres[i + 1].position);
+        midPoint.multiplyScalar(0.5);
+        // 中間点を少し外側に押し出して美しい曲線を作る
+        midPoint.add(new THREE.Vector3(
+          (Math.random() - 0.5) * 0.3,
+          (Math.random() - 0.5) * 0.3,
+          (Math.random() - 0.5) * 0.3
+        ));
+        
+        const curve = new THREE.QuadraticBezierCurve3(
+          spheres[i].position,
+          midPoint,
+          spheres[i + 1].position
+        );
+        
+        const curveGeometry = new THREE.BufferGeometry().setFromPoints(
+          curve.getPoints(20)
+        );
+        
+        // グラデーション効果のある糸
+        const material = new THREE.LineBasicMaterial({ 
+          color: new THREE.Color().lerpColors(
+            new THREE.Color(getThemeColor(spheres[i].userData.experience.id)),
+            new THREE.Color(getThemeColor(spheres[i + 1].userData.experience.id)),
+            0.5
+          ),
+          transparent: true,
+          opacity: 0.6,
+          linewidth: 2
+        });
+        
+        const line = new THREE.Line(curveGeometry, material);
+        scene.add(line);
       }
+    }
+    
+    // 浮遊ミッションを3D球体で追加
+    floatingMissions.forEach((mission, index) => {
+      // より大きな球体にして判定しやすくする
+      const geometry = new THREE.SphereGeometry(0.25, 24, 24);
+      const colorHex = getThemeColor(mission.id, mission.category);
       
-      // 浮遊する丸
-      const missionSize = 12 + Math.sin(time * 2) * 2;
-      
-      // 外側のリング（パルス効果）
-      ctx.beginPath();
-      ctx.arc(x, y, missionSize + 5 + Math.sin(time * 3) * 3, 0, Math.PI * 2);
-      
-      const baseColor = idToColor(mission.id);
-      const ringColorWithAlpha = baseColor.replace('hsl(', 'hsla(').replace(')', ', 0.4)');
-      ctx.strokeStyle = ringColorWithAlpha;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      // メインの丸
-      const missionGradient = ctx.createRadialGradient(x - 3, y - 3, 0, x, y, missionSize);
-      missionGradient.addColorStop(0, 'white');
-      missionGradient.addColorStop(0.5, baseColor);
-      
-      const centerColorWithAlpha = baseColor.replace('hsl(', 'hsla(').replace(')', ', 0.87)');
-      missionGradient.addColorStop(1, centerColorWithAlpha);
-      
-      ctx.beginPath();
-      ctx.arc(x, y, missionSize, 0, Math.PI * 2);
-      ctx.fillStyle = missionGradient;
-      ctx.fill();
-      
-      // レベル表示
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(mission.level || '?', x, y);
-    });
-
-  }, [experiences, animationFrame, floatingMissions]);
-
-  const handleMouseMove = (e) => {
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setMousePos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+      const material = new THREE.MeshStandardMaterial({ 
+        color: new THREE.Color(colorHex),
+        transparent: true,
+        opacity: 0.85,
+        metalness: 0.05,
+        roughness: 0.2,
+        emissive: new THREE.Color(colorHex).multiplyScalar(0.15),
+        emissiveIntensity: 0.3
       });
-    }
-  };
-
-  const handleCanvasClick = (e) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-
-    // 完了済み体験のクリック判定
-    const paths = generateArtisticPaths(rect.width, rect.height);
-    for (let i = paths.length - 1; i >= 0; i--) {
-      const path = paths[i];
-      const distance = Math.sqrt(Math.pow(clickX - path.x, 2) + Math.pow(clickY - path.y, 2));
-      if (distance < 15 && onExperienceClick) {
-        onExperienceClick(path.exp);
-        return;
-      }
-    }
-
-    // 浮遊ミッションのクリック判定
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    
-    floatingMissions.forEach((mission) => {
-      const time = animationFrame * mission.speed;
-      const floatRadius = 150 + Math.sin(time + mission.phase) * 30;
-      const angle = time + mission.phase;
+      const missionMesh = new THREE.Mesh(geometry, material);
       
-      const x = centerX + Math.cos(angle) * floatRadius + mission.floatX;
-      const y = centerY + Math.sin(angle) * floatRadius + mission.floatY;
+      const baseAngle = (index / Math.max(floatingMissions.length, 1)) * Math.PI * 2;
+      const floatRadius = 4.0;
       
-      const distance = Math.sqrt(Math.pow(clickX - x, 2) + Math.pow(clickY - y, 2));
-      if (distance < 20 && onExperienceClick) {
-        onExperienceClick(mission);
+      missionMesh.position.x = Math.cos(baseAngle) * floatRadius;
+      missionMesh.position.y = Math.sin(baseAngle) * floatRadius;
+      missionMesh.position.z = Math.sin(baseAngle * 2) * 1.5;
+      
+      missionMesh.userData = { experience: mission, type: 'floating', index: index };
+      
+      scene.add(missionMesh);
+      meshesRef.current.push(missionMesh); // レイキャスト用の配列に追加
+      
+      // 浮遊ミッションの周りにパーティクル効果を追加
+      const particleGeometry = new THREE.SphereGeometry(0.02, 8, 8);
+      const particleMaterial = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(colorHex),
+        transparent: true,
+        opacity: 0.4
+      });
+      
+      for (let p = 0; p < 5; p++) {
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.copy(missionMesh.position);
+        particle.position.add(new THREE.Vector3(
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.5) * 0.8
+        ));
+        particle.userData = { 
+          parentMission: missionMesh, 
+          offset: new THREE.Vector3(
+            (Math.random() - 0.5) * 0.8,
+            (Math.random() - 0.5) * 0.8,
+            (Math.random() - 0.5) * 0.8
+          ),
+          speed: 0.001 + Math.random() * 0.002
+        };
+        scene.add(particle);
       }
     });
-  };
+    
+    // アニメーションループ
+    let animationId;
+    const animate = () => {
+      animationId = requestAnimationFrame(animate);
+      
+      // 球体を個別にパルス
+      meshesRef.current.forEach((mesh, index) => {
+        if (mesh.userData.type === 'completed') {
+          const pulseScale = 1 + Math.sin(Date.now() * 0.002 + index * 0.5) * 0.1;
+          mesh.scale.setScalar(pulseScale);
+          
+          // 材質の発光を動的に変更
+          if (mesh.material.emissiveIntensity !== undefined) {
+            mesh.material.emissiveIntensity = 0.1 + Math.sin(Date.now() * 0.003 + index) * 0.05;
+          }
+        } else if (mesh.userData.type === 'floating') {
+          const time = Date.now() * 0.0008;
+          const baseAngle = (mesh.userData.index / Math.max(floatingMissions.length, 1)) * Math.PI * 2;
+          const floatRadius = 4.0 + Math.sin(time * 0.5 + mesh.userData.index) * 0.5;
+          const verticalFloat = Math.sin(time * 0.7 + mesh.userData.index * 1.5) * 1.5;
+          
+          mesh.position.x = Math.cos(baseAngle) * floatRadius;
+          mesh.position.y = Math.sin(baseAngle) * floatRadius;
+          mesh.position.z = verticalFloat;
+          
+          const pulseSize = 1 + Math.sin(time * 2 + mesh.userData.index * 2) * 0.2;
+          mesh.scale.setScalar(pulseSize);
+          
+          // 材質の発光を動的に変更
+          if (mesh.material.emissiveIntensity !== undefined) {
+            mesh.material.emissiveIntensity = 0.3 + Math.sin(time * 4 + mesh.userData.index) * 0.2;
+          }
+        }
+      });
+      
+      // パーティクルのアニメーション
+      scene.traverse((object) => {
+        if (object.userData.parentMission) {
+          const time = Date.now() * object.userData.speed * 0.8;
+          const parent = object.userData.parentMission;
+          const offset = object.userData.offset;
+          
+          object.position.copy(parent.position);
+          object.position.add(new THREE.Vector3(
+            offset.x * Math.sin(time),
+            offset.y * Math.cos(time),
+            offset.z * Math.sin(time * 1.5)
+          ));
+          
+          // パーティクルの透明度をアニメーション
+          if (object.material) {
+            object.material.opacity = 0.2 + Math.sin(time * 3) * 0.2;
+          }
+        }
+      });
+      
+      renderer.render(scene, camera);
+    };
+    
+    animate();
+    
+    // ウィンドウリサイズ対応
+    const handleResize = () => {
+      const newRect = canvas.getBoundingClientRect();
+      camera.aspect = newRect.width / newRect.height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(newRect.width, newRect.height);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    // クリーンアップ
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+      
+      window.removeEventListener('resize', handleResize);
+      
+      // ジオメトリとマテリアルのクリーンアップ
+      scene.traverse((object) => {
+        if (object.geometry) {
+          object.geometry.dispose();
+        }
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach(material => material.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
+      
+      renderer.dispose();
+    };
+    
+  }, [experiences, floatingMissions]);
 
   return (
     <div className="px-4" ref={containerRef}>
       <div className="relative mb-8 bg-white rounded-3xl shadow-2xl overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          className="w-full h-[500px] rounded-2xl cursor-pointer"
-          onMouseMove={handleMouseMove}
-          onClick={handleCanvasClick}
-          style={{ display: 'block' }}
-        />
+        <div className="relative w-full h-[500px]">
+          <canvas
+            ref={canvasRef}
+            className="w-full h-full rounded-2xl"
+            onMouseMove={handleMouseMove}
+            onClick={handleCanvasClick}
+            onMouseLeave={() => {
+              setHoveredExperience(null);
+              if (canvasRef.current) {
+                canvasRef.current.style.cursor = 'default';
+              }
+            }}
+          />
+        </div>
         
         {/* 統計オーバーレイ */}
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-lg rounded-2xl p-4 shadow-lg">
@@ -311,24 +479,38 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
           </div>
         </div>
         
+        {/* ホバー時の詳細表示 - より目立つように改善 */}
         {hoveredExperience && (
           <div 
-            className="absolute bg-white/95 backdrop-blur-lg rounded-2xl p-4 shadow-xl pointer-events-none z-10"
+            className="absolute bg-gray-900/95 text-white backdrop-blur-lg rounded-2xl p-4 shadow-2xl pointer-events-none z-20 border border-white/20"
             style={{
-              left: Math.min(mousePos.x + 15, (containerRef.current?.offsetWidth || 400) - 200),
-              top: mousePos.y - 10,
-              transform: 'translateY(-100%)',
-              maxWidth: '200px'
+              left: Math.min(mousePos.x + 15, (containerRef.current?.offsetWidth || 400) - 250),
+              top: Math.max(mousePos.y - 100, 10),
+              maxWidth: '250px',
+              transform: 'scale(1)',
+              animation: 'fadeIn 0.2s ease-out'
             }}
           >
-            <h4 className="font-semibold text-gray-800 mb-1">{hoveredExperience.title}</h4>
-            <p className="text-sm text-gray-600 mb-1">{hoveredExperience.category}</p>
-            <p className="text-xs text-gray-500">
-              {new Date(hoveredExperience.date).toLocaleDateString('ja-JP')}
-            </p>
-            {!hoveredExperience.completed && (
-              <p className="text-xs text-yellow-600 mt-1">🎯 進行中のミッション</p>
-            )}
+            <h4 className="font-bold text-lg mb-2">{hoveredExperience.title}</h4>
+            <div className="space-y-1">
+              <p className="text-sm opacity-90">{hoveredExperience.category}</p>
+              <p className="text-xs opacity-80">
+                {hoveredExperience.date ? new Date(hoveredExperience.date).toLocaleDateString('ja-JP', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }) : '日付なし'}
+              </p>
+              {!hoveredExperience.completed && (
+                <p className="text-xs text-yellow-400 mt-2">🎯 進行中のミッション</p>
+              )}
+              {hoveredExperience.completed && (
+                <p className="text-xs text-green-400 mt-2">✨ 完了済み</p>
+              )}
+            </div>
+            <div className="mt-3 pt-3 border-t border-white/20">
+              <p className="text-xs opacity-70">クリックして詳細を見る</p>
+            </div>
           </div>
         )}
       </div>
@@ -342,6 +524,20 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
           </p>
         </div>
       )}
+      
+      {/* CSS追加 */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 };
