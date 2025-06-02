@@ -260,3 +260,74 @@ class AIRecommendationService:
             }
         except Exception as e:
             return {"status": "error", "message": f"AI service test failed: {str(e)}"}
+            
+    def analyze_growth_pattern(self, experiences: List[Dict]) -> Dict:
+        """成長パターンをAIで分析"""
+        if not self.enabled:
+            return {
+                "insights": ["順調に成長しています"],
+                "next_challenges": ["新しいカテゴリーに挑戦"]
+            }
+        
+        try:
+            prompt = f"""
+            ユーザーの体験履歴を分析し、成長パターンと次のステップを提案してください。
+            
+            体験数: {len(experiences)}
+            カテゴリー分布: {self._get_category_distribution(experiences)}
+            
+            以下のJSON形式で返してください：
+            {{
+                "insights": ["具体的な気づき1", "具体的な気づき2"],
+                "next_challenges": ["次に挑戦すべきこと1", "次に挑戦すべきこと2"],
+                "growth_characteristics": "成長の特徴"
+            }}
+            """
+            
+            message = HumanMessage(content=prompt)
+            response = self.model.invoke([message])
+            
+            if response.content:
+                return self._parse_ai_response(response.content)
+                
+        except Exception as e:
+            print(f"🤖 Growth analysis failed: {str(e)}")
+        
+        return {
+            "insights": ["順調に成長しています"],
+            "next_challenges": ["新しいカテゴリーに挑戦"]
+        }
+
+    def suggest_journal_prompts(self, recent_experiences: List[Dict]) -> List[Dict]:
+        """最近の体験に基づいてジャーナルプロンプトを提案"""
+        if not self.enabled:
+            return []
+        
+        try:
+            prompt = f"""
+            ユーザーの最近の体験に基づいて、振り返りのためのジャーナルプロンプトを提案してください。
+            
+            最近の体験:
+            {[exp.get('title', '') for exp in recent_experiences[-5:]]}
+            
+            以下のJSON形式で1つ返してください：
+            {{
+                "id": "ai_suggested",
+                "title": "プロンプトのタイトル",
+                "prompts": ["質問1", "質問2"],
+                "tags": ["タグ1", "タグ2"]
+            }}
+            """
+            
+            message = HumanMessage(content=prompt)
+            response = self.model.invoke([message])
+            
+            if response.content:
+                parsed = self._parse_ai_response(response.content)
+                if parsed:
+                    return [parsed]
+                    
+        except Exception as e:
+            print(f"🤖 Journal prompt suggestion failed: {str(e)}")
+        
+        return []

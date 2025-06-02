@@ -44,7 +44,7 @@ const ExperienceDetailModal = ({ experience, onClose, onFeedback, onClearMission
                 onClick={() => onClearMission(experience.id)}
                 className="w-full py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
               >
-                ミッションをクリア
+                達成した
               </button>
             </div>
           )}

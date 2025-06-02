@@ -79,3 +79,54 @@ export const generateChallengeLocal = (level) => {
   
   return challenge;
 };
+
+const idToColor = (id) => {
+  let hash = 0;
+  const strId = String(id);
+  for (let i = 0; i < strId.length; i++) {
+    hash = strId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // より美しいパステル調の色相範囲に制限
+  const colorRanges = [
+    { min: 250, max: 280 }, // 淡い紫〜青紫系
+    { min: 200, max: 230 }, // 淡い青系
+    { min: 300, max: 330 }, // 淡いピンク〜マゼンタ系
+    { min: 180, max: 210 }  // 淡いシアン系
+  ];
+  
+  // ハッシュ値から色相範囲を選択
+  const rangeIndex = Math.abs(hash) % colorRanges.length;
+  const selectedRange = colorRanges[rangeIndex];
+  
+  // 選択された範囲内で色相を決定
+  const hue = Math.abs(hash * 137.508) % (selectedRange.max - selectedRange.min) + selectedRange.min;
+  
+  // より柔らかい彩度と明度に調整
+  const saturation = Math.round(40 + (Math.abs(hash) % 20)); // 40-60%（より淡く）
+  const lightness = Math.round(70 + (Math.abs(hash) % 15));  // 70-85%（より明るく）
+  
+  return `hsl(${Math.round(hue)}, ${saturation}%, ${lightness}%)`;
+};
+
+// テーマカラー取得関数
+export const getThemeColor = (id, category = null) => {
+  // より美しいパステル調のカテゴリーカラー
+  const categoryColors = {
+    "ライフスタイル": "#6EE7B7",    // 淡い緑
+    "アート・創作": "#C4B5FD",     // 淡い紫
+    "料理・グルメ": "#FDE68A",     // 淡い黄色
+    "ソーシャル": "#F9A8D4",       // 淡いピンク
+    "学習・読書": "#93C5FD",       // 淡い青
+    "自然・アウトドア": "#86EFAC",  // 淡いグリーン
+    "エンタメ": "#FDBA74"          // 淡いオレンジ
+  };
+  
+  // カテゴリーが指定されていて、マッピングが存在する場合はそれを使用
+  if (category && categoryColors[category]) {
+    return categoryColors[category];
+  }
+  
+  // それ以外はIDベースの色を生成
+  return idToColor(id);
+};
