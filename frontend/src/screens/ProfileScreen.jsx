@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, Bell, Shield, Settings, Download, Award, TrendingUp, Target } from 'lucide-react';
 import api from '../services/api';
 
 const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
   const [showPrivacySettings, setShowPrivacySettings] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showGrowthAnalysis, setShowGrowthAnalysis] = useState(false);
   const [privacySettings, setPrivacySettings] = useState({
@@ -11,6 +15,7 @@ const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
     analytics: true,
     personalizedAds: false
   });
+  
   const [notificationSettings, setNotificationSettings] = useState({
     dailyChallenge: true,
     achievements: true,

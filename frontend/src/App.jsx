@@ -341,7 +341,7 @@ const App = () => {
             />
           )}
 
-          {!['journal', 'gallery', 'theme-challenge', 'journal-entry'].includes(currentScreen) && (
+          {!['journal', 'theme-challenge', 'journal-entry'].includes(currentScreen) && (
             <NavigationBar
               currentScreen={currentScreen}
               setCurrentScreen={setCurrentScreen}
