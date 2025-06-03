@@ -47,25 +47,23 @@ export const createConnectionThreads = (scene, spheres) => {
       
       // 円柱のジオメトリを作成
       const cylinderGeometry = new THREE.CylinderGeometry(
-        0.05, // 上部の半径（太さ）
-        0.05, // 下部の半径（太さ）
+        0.025, // 上部の半径（太さ）
+        0.025, // 下部の半径（太さ）
         length, // 長さ
         8, // 円周方向のセグメント数
         1
       );
       
       // 色のグラデーション
-      const t = j / (points.length - 1);
-      const segmentColor = new THREE.Color().lerpColors(
-        new THREE.Color(getThemeColor(spheres[i].userData.experience.id)),
-        new THREE.Color(getThemeColor(spheres[i + 1].userData.experience.id)),
-        t
-      );
+      const segmentColor = new THREE.Color(getThemeColor(spheres[i].userData.experience.id));
       
+      // プロンプトの意図: マットな質感の糸
+      // "soft matte threads"
       const cylinderMaterial = new THREE.MeshPhongMaterial({
         color: segmentColor,
         transparent: true,
         opacity: 0.8,
+        shininess: 0, // テカリを無くすため、光沢を0に設定
         emissive: segmentColor,
         emissiveIntensity: 0.2
       });
@@ -82,43 +80,12 @@ export const createConnectionThreads = (scene, spheres) => {
       cylinder.quaternion.copy(quaternion);
       
       // 糸が動かないように固定
-      cylinder.userData = { isConnectionThread: true, isStatic: true };
-      
+      cylinder.userData = { 
+        isConnectionThread: true, 
+        isStatic: true,
+        experience: spheres[i].userData.experience // startSphereのexperienceデータを保存
+      };
       scene.add(cylinder);
     }
-    
-    // 糸に沿ってパーティクルを配置（固定位置）
-    createThreadParticles(scene, curve, spheres[i], spheres[i + 1], distance);
-  }
-};
-
-// 糸に沿った固定パーティクル作成
-const createThreadParticles = (scene, curve, startSphere, endSphere, distance) => {
-  const particleCount = Math.floor(distance * 3);
-  for (let j = 0; j < particleCount; j++) {
-    const t = j / particleCount;
-    const point = curve.getPoint(t);
-    
-    const particleGeometry = new THREE.SphereGeometry(0.03, 6, 6);
-    const particleMaterial = new THREE.MeshBasicMaterial({
-      color: new THREE.Color().lerpColors(
-        new THREE.Color(getThemeColor(startSphere.userData.experience.id)),
-        new THREE.Color(getThemeColor(endSphere.userData.experience.id)),
-        t
-      ),
-      transparent: true,
-      opacity: 0.6,
-      blending: THREE.AdditiveBlending
-    });
-    
-    const particle = new THREE.Mesh(particleGeometry, particleMaterial);
-    particle.position.copy(point);
-    particle.userData = {
-      isThreadParticle: true,
-      baseOpacity: 0.6,
-      phase: (j / particleCount) * Math.PI * 2,
-      isStatic: true // 位置を固定
-    };
-    scene.add(particle);
   }
 };

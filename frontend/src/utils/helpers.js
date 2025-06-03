@@ -88,11 +88,20 @@ const idToColor = (id) => {
   }
   
   // より美しいパステル調の色相範囲に制限
+  // より多様な色相範囲に拡張
   const colorRanges = [
-    { min: 250, max: 280 }, // 淡い紫〜青紫系
-    { min: 200, max: 230 }, // 淡い青系
-    { min: 300, max: 330 }, // 淡いピンク〜マゼンタ系
-    { min: 180, max: 210 }  // 淡いシアン系
+    { min: 0, max: 30 },   // 赤〜オレンジ系
+    { min: 30, max: 60 },  // オレンジ〜黄系
+    { min: 60, max: 90 },  // 黄〜黄緑系
+    { min: 90, max: 120 }, // 黄緑〜緑系
+    { min: 120, max: 150 },// 緑〜青緑系
+    { min: 150, max: 180 },// 青緑〜シアン系
+    { min: 180, max: 210 },// シアン〜青系
+    { min: 210, max: 240 },// 青〜青紫系
+    { min: 240, max: 270 },// 青紫〜紫系
+    { min: 270, max: 300 },// 紫〜マゼンタ系
+    { min: 300, max: 330 },// マゼンタ〜ピンク系
+    { min: 330, max: 360 } // ピンク〜赤系
   ];
   
   // ハッシュ値から色相範囲を選択
@@ -102,9 +111,10 @@ const idToColor = (id) => {
   // 選択された範囲内で色相を決定
   const hue = Math.abs(hash * 137.508) % (selectedRange.max - selectedRange.min) + selectedRange.min;
   
-  // より柔らかい彩度と明度に調整
-  const saturation = Math.round(40 + (Math.abs(hash) % 20)); // 40-60%（より淡く）
-  const lightness = Math.round(70 + (Math.abs(hash) % 15));  // 70-85%（より明るく）
+  // さらにカラフルにするため、彩度と明度を調整
+  // もっと色鮮やかにするため、彩度と明度を調整
+  const saturation = Math.round(80 + (Math.abs(hash) % 20)); // 80-100%（さらに鮮やかに）
+  const lightness = Math.round(40 + (Math.abs(hash) % 40));  // 40-80%（鮮やかさを保ちつつ多様な明るさ）
   
   return `hsl(${Math.round(hue)}, ${saturation}%, ${lightness}%)`;
 };

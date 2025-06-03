@@ -177,9 +177,9 @@ const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
       {/* 成長分析セクション */}
       <div className="bg-white/60 backdrop-blur rounded-2xl overflow-hidden mb-4">
         <button
-          onClick={() => setShowGrowthAnalysis(!showGrowthAnalysis)}
-          className="w-full p-4 flex items-center justify-between hover:bg-white/80 transition-colors"
-        >
+            onClick={() => setShowGrowthAnalysis(!showGrowthAnalysis)}
+            className="w-full p-4 flex items-center justify-between bg-white/60 transition-colors"
+          >
           <div className="flex items-center gap-3">
             <TrendingUp className="w-5 h-5 text-gray-600" />
             <span className="font-medium text-gray-800">成長分析</span>
@@ -218,7 +218,7 @@ const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
         <div className="bg-white/60 backdrop-blur rounded-2xl overflow-hidden">
           <button
             onClick={() => setShowNotificationSettings(!showNotificationSettings)}
-            className="w-full p-4 flex items-center justify-between hover:bg-white/80 transition-colors"
+            className="w-full p-4 flex items-center justify-between bg-white/60 transition-colors"
           >
             <div className="flex items-center gap-3">
               <Bell className="w-5 h-5 text-gray-600" />
@@ -278,7 +278,7 @@ const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
         <div className="bg-white/60 backdrop-blur rounded-2xl overflow-hidden">
           <button
             onClick={() => setShowPrivacySettings(!showPrivacySettings)}
-            className="w-full p-4 flex items-center justify-between hover:bg-white/80 transition-colors"
+            className="w-full p-4 flex items-center justify-between bg-white/60 transition-colors"
           >
             <div className="flex items-center gap-3">
               <Shield className="w-5 h-5 text-gray-600" />
@@ -377,7 +377,7 @@ const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
         {/* データエクスポート */}
         <button
           onClick={handleExportData}
-          className="w-full bg-white/60 backdrop-blur rounded-2xl p-4 flex items-center justify-between hover:bg-white/80 transition-colors"
+          className="w-full p-4 flex items-center justify-between bg-white/60 transition-colors"
         >
           <div className="flex items-center gap-3">
             <Download className="w-5 h-5 text-gray-600" />

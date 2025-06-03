@@ -33,14 +33,19 @@ export const useThreeJSAnimation = () => {
             mesh.userData.light.intensity = 0.8 + Math.sin(hoverTime * 4) * 0.2;
           }
         } else {
-          // 通常のパルス
-          const pulseScale = baseScale * (1 + Math.sin(Date.now() * 0.002 + index * 0.5) * 0.05);
-          mesh.scale.setScalar(pulseScale);
+          // 通常のパルスを停止
+          // const pulseScale = baseScale * (1 + Math.sin(Date.now() * 0.002 + index * 0.5) * 0.05);
+          // mesh.scale.setScalar(pulseScale);
+          mesh.scale.setScalar(baseScale); // スケールを固定
           
-          // 通常の発光
-          mesh.material.emissiveIntensity = 0.3 + Math.sin(Date.now() * 0.003 + index) * 0.1;
+          // 通常の発光を停止
+          // mesh.material.emissiveIntensity = 0.3 + Math.sin(Date.now() * 0.003 + index) * 0.1;
+          // if (mesh.userData.light) {
+          //   mesh.userData.light.intensity = 0.5 + Math.sin(Date.now() * 0.003 + index) * 0.1;
+          // }
+          mesh.material.emissiveIntensity = 0.3; // 発光強度を固定
           if (mesh.userData.light) {
-            mesh.userData.light.intensity = 0.5 + Math.sin(Date.now() * 0.003 + index) * 0.1;
+            mesh.userData.light.intensity = 0.5; // ライト強度を固定
           }
         }
       } else if (mesh.userData.type === 'floating') {
@@ -82,11 +87,11 @@ export const useThreeJSAnimation = () => {
     
     const isCurrentlyHovered = mesh === hoveredMeshRef.current;
     
-    // 常時回転（浮遊ミッション用）
-    const floatRotationSpeed = 0.008 + (mesh.userData.index % 4) * 0.003;
-    mesh.rotation.x += floatRotationSpeed;
-    mesh.rotation.y += floatRotationSpeed * 0.7;
-    mesh.rotation.z += floatRotationSpeed * 0.4;
+    // 常時回転を停止（浮遊ミッション用）
+    // const floatRotationSpeed = 0.008 + (mesh.userData.index % 4) * 0.003;
+    // mesh.rotation.x += floatRotationSpeed;
+    // mesh.rotation.y += floatRotationSpeed * 0.7;
+    // mesh.rotation.z += floatRotationSpeed * 0.4;
     
     // ホバー状態の安定化
     if (isCurrentlyHovered) {
@@ -114,10 +119,10 @@ export const useThreeJSAnimation = () => {
       const hoverScale = 1.5 + Math.sin(hoverTime * 4) * 0.3;
       mesh.scale.setScalar(hoverScale);
       
-      // ホバー時の追加回転効果
-      mesh.rotation.x += 0.05;
-      mesh.rotation.y += 0.04;
-      mesh.rotation.z += 0.06;
+      // ホバー時の追加回転効果を停止
+      // mesh.rotation.x += 0.05;
+      // mesh.rotation.y += 0.04;
+      // mesh.rotation.z += 0.06;
       
       // ホバー時の発光
       if (mesh.material.emissiveIntensity !== undefined) {

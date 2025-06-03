@@ -28,7 +28,7 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 w-full mx-auto overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 w-full mx-auto overflow-hidden"> {/* overflow-x-hidden を overflow-hidden に変更 */}
       <div className="relative">
         {/* ヘッダー部分 - 強制表示版 */}
         <div className="absolute top-0 left-0 right-0 z-10 px-4 py-6">
