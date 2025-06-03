@@ -16,6 +16,7 @@ import ExperienceDetailModal from './components/ExperienceDetailModal';
 import StringsGalleryScreen from './screens/StringsGalleryScreen';
 import JournalEntryScreen from './screens/JournalEntryScreen';
 import ThemeChallengeScreen from './screens/ThemeChallengeScreen';
+import MissionPopup from './components/MissionPopup';
 
 const App = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState(true);
@@ -67,6 +68,7 @@ const App = () => {
   const [selectedExperience, setSelectedExperience] = useState(null);
   const [challengesInitialized, setChallengesInitialized] = useState(false);
   const [activeThemeChallenge, setActiveThemeChallenge] = useState(null);
+  const [showMissionPopup, setShowMissionPopup] = useState(false);
 
   // generateChallenge関数
   const generateChallenge = async (level) => {
@@ -224,18 +226,15 @@ const App = () => {
       setExperiences(updatedExperiences);
       setCurrentScreen('home');
       setCurrentChallenge(null);
-      
-      // 保存時もデータを検証
-      const safeExperiences = updatedExperiences.map(exp => ({
-        ...exp,
-        title: exp.title || '無題の体験',
-        category: exp.category || 'その他'
-      }));
-      
-      localStorage.setItem('experiences', JSON.stringify(safeExperiences));
-      api.updatePreferences(safeExperiences);
+      api.updatePreferences(updatedExperiences);
+      localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
+      setShowMissionPopup(true); // ミッション開始時にポップアップを表示
     }
   }, [currentChallenge, experiences, selectedLevel]);
+
+  const handleCloseMissionPopup = useCallback(() => {
+    setShowMissionPopup(false);
+  }, []);
 
   const skipChallenge = useCallback(async (reason) => {
     if (currentChallenge) {
@@ -416,13 +415,19 @@ const App = () => {
             />
           )}
 
-          {!['journal', 'gallery', 'theme-challenge', 'journal-entry'].includes(currentScreen) && (
+          {!['journal', 'theme-challenge', 'journal-entry'].includes(currentScreen) && (
             <NavigationBar
               currentScreen={currentScreen}
               setCurrentScreen={setCurrentScreen}
               onNavigateToRecommendation={navigateToRecommendation}
             />
           )}
+
+          <MissionPopup
+            isOpen={showMissionPopup}
+            onClose={handleCloseMissionPopup}
+            floatingMissionsCount={experiences.filter(exp => !exp.completed).length}
+          />
         </div>
       </ErrorBoundary>
 

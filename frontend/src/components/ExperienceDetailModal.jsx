@@ -13,7 +13,7 @@ const ExperienceDetailModal = ({ experience, onClose, onFeedback, onClearMission
       <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl">
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-xl font-bold text-gray-800">{experience.title}</h3>
-          <button onClick={onClose} className="p-2">
+          <button onClick={onClose} className="p-2 bg-transparent">
             <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>

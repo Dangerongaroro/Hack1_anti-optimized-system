@@ -1,6 +1,5 @@
-import { useRef } from 'react';
 import * as THREE from 'three';
-import { createHoverParticles, createClickParticles } from '../effects/particleEffects';
+import { createHoverParticles } from '../effects/particleEffects';
 
 export const useThreeJSInteraction = () => {
   // マウスホイールでズーム
@@ -49,17 +48,14 @@ export const useThreeJSInteraction = () => {
       
       // 前回のホバーと異なる場合のみ処理
       if (hoveredMeshRef.current !== newHoveredObject) {
-        
         // 前回のホバーをリセット
         if (hoveredMeshRef.current) {
           if (hoveredMeshRef.current.material && hoveredMeshRef.current.material.emissiveIntensity !== undefined) {
             hoveredMeshRef.current.material.emissiveIntensity = hoveredMeshRef.current.userData.originalEmissive || 0.1;
           }
         }
-        
         // 新しいホバー対象を設定
         hoveredMeshRef.current = newHoveredObject;
-        
         if (newHoveredObject) {
           console.log('=== Hover デバッグ ===');
           console.log('Hover object userData:', newHoveredObject.userData);
@@ -146,10 +142,10 @@ export const useThreeJSInteraction = () => {
             canvasRef.current.style.cursor = 'default';
           }
         } else {
-          // ホバー対象がない場合
-          console.log('⭕ No hover target, clearing state');
+          // ホバー対象がない場合は必ずhoveredMeshRef.currentをnullにし、setHoveredExperience(null)を呼ぶ
+          hoveredMeshRef.current = null;
           setHoveredExperience(null);
-          canvasRef.current.style.cursor = 'default';
+          if (canvasRef.current) canvasRef.current.style.cursor = 'default';
         }
       }
     }

@@ -1,6 +1,6 @@
-import React from 'react';
-import { TrendingUp, Calendar, Sparkles, CheckCircle2, Star, Plus, Edit3 } from 'lucide-react';
-import ExperienceStrings from '../components/ExperienceStrings';
+import React, { useEffect, useState } from 'react';
+import { TrendingUp, Calendar, Sparkles, CheckCircle2, Star, Plus, Edit3, Info } from 'lucide-react';
+import OptimizedExperienceStrings from '../components/ExperienceStrings/OptimizedExperienceStrings';
 
 const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExperienceClick, onClearMission, onNavigateToJournalEntry }) => {
   const safeExperiences = Array.isArray(experiences) ? experiences : [];
@@ -23,8 +23,14 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
   const actualCompletedExperiences = safeExperiences.filter(e => e && e.completed).length;
   const actualCurrentStreak = safeUserStats.currentStreak;
 
+  const [showInfoModal, setShowInfoModal] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 w-full mx-auto overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 w-full mx-auto overflow-hidden"> {/* overflow-x-hidden を overflow-hidden に変更 */}
       <div className="relative">
         {/* ヘッダー部分 - 強制表示版 */}
         <div className="absolute top-0 left-0 right-0 z-10 px-4 py-6">
@@ -33,15 +39,15 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
               <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Seren Paths
               </h1>
-              <p className="text-gray-600 text-sm">あなたの成長の軌跡</p>
+              <p className="text-gray-600 text-sm font-bold">新しい自分を発見する旅</p>
             </div>
             {/* 右上の達成度表示 - 確実に表示 */}
             <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
-              <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-2 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
+              <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
                 <TrendingUp className="w-4 h-4 text-purple-600 flex-shrink-0" />
                 <span className="text-sm font-medium text-gray-800 whitespace-nowrap">{actualTotalExperiences}体験</span>
               </div>
-              <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-2 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow border border-pink-100">
+              <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow border border-pink-100">
                 <Calendar className="w-4 h-4 text-pink-600 flex-shrink-0" />
                 <span className="text-sm font-medium text-gray-800 whitespace-nowrap">{actualCurrentStreak}日</span>
               </div>
@@ -51,10 +57,23 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
 
         {/* 体験表示部分 */}
         <div className="pt-24 lg:pt-28 pb-8">
-          <ExperienceStrings 
+          <OptimizedExperienceStrings 
             experiences={safeExperiences} 
             onExperienceClick={onExperienceClick} 
           />
+          {/* canvas直下に説明パネルを配置 */}
+          <div className="mt-8 mb-4 max-w-xl mx-auto">
+            <div className="bg-white shadow-lg rounded-2xl p-4 flex items-center">
+              <h3 className="text-lg font-semibold text-blue-900 mr-2">体験の糸について</h3>
+              <button
+                onClick={() => setShowInfoModal(true)}
+                className="p-1 rounded-full bg-transparent hover:bg-blue-100 transition-colors"
+                aria-label="体験の糸についての情報"
+              >
+                <Info className="w-5 h-5 text-blue-700" />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* 統計表示 - 改良版 */}
@@ -130,12 +149,6 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
               <div className="text-6xl mb-4">🌟</div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">すべてのミッション完了！</h3>
               <p className="text-gray-600 mb-4">素晴らしい成果です。新しいお題を探してみましょう。</p>
-              <button
-                onClick={onNavigateToRecommendation}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300"
-              >
-                新しいお題を見つける
-              </button>
             </div>
           )}
         </div>
@@ -175,10 +188,24 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
           </button>
         </div>
       </div>
+      {/* 詳細説明モーダル */}
+      {showInfoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl relative">
+            <h3 className="text-xl font-bold text-blue-900 mb-4">体験の糸について</h3>
+            <p className="text-gray-700 leading-relaxed mb-4">
+              完了した体験は美しい球体として表示され、それらを繋ぐ糸が成長の軌跡を表現します。<br />
+              各体験には固有の色があり、カテゴリーやテーマによって美しいグラデーションを作り出します。<br />
+              ホバーやクリックで詳細な情報を確認できます。
+            </p>
+            <button onClick={() => setShowInfoModal(false)} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default HomeScreen;
-
-

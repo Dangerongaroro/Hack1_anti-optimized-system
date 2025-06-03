@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, Download, Play, Pause } from 'lucide-react';
 
 const StringsGalleryScreen = ({ experiences, onBack }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('all');
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
-
   // 期間でフィルタリング
   const filterExperiencesByPeriod = () => {
     const now = new Date();
@@ -96,13 +99,7 @@ const StringsGalleryScreen = ({ experiences, onBack }) => {
       <div className="max-w-4xl mx-auto">
         {/* ヘッダー */}
         <div className="flex items-center mb-6">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-white/60 rounded-full transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6 text-gray-600" />
-          </button>
-          <h1 className="text-xl font-bold text-gray-800 ml-3">ストリングス・ギャラリー</h1>
+          <h1 className="text-xl font-bold text-gray-800">ストリングス・ギャラリー</h1>
         </div>
 
         {/* 期間選択 */}

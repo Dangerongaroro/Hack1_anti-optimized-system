@@ -110,7 +110,7 @@ export const createCompletedSpheres = (scene, experiences, meshesRef) => {
     };
     
     // 球体作成
-    const geometry = new THREE.SphereGeometry(0.2 + t * 0.1, 16, 16);
+    const geometry = new THREE.OctahedronGeometry(0.2 + t * 0.1, 16, 16);
     const colorHex = getThemeColor(exp.id, exp.category);
     const color = new THREE.Color(colorHex);
     
@@ -162,7 +162,7 @@ export const createFloatingMissions = (scene, experiences, meshesRef) => {
   const incompleteMissions = experiences.filter(exp => !exp.completed);
   
   incompleteMissions.forEach((mission, index) => {
-    const geometry = new THREE.SphereGeometry(0.2, 24, 24);
+    const geometry = new THREE.OctahedronGeometry(0.2, 24, 24);
     const colorHex = getThemeColor(mission.id, mission.category);
     
     const material = new THREE.MeshStandardMaterial({ 
@@ -208,7 +208,7 @@ export const createFloatingMissions = (scene, experiences, meshesRef) => {
     scene.add(trailGroup);
     
     // 周囲のパーティクル効果（固定位置）
-    const particleGeometry = new THREE.SphereGeometry(0.02, 8, 8);
+    const particleGeometry = new THREE.OctahedronGeometry(0.02, 8, 8);
     const particleMaterial = new THREE.MeshBasicMaterial({
       color: new THREE.Color(colorHex),
       transparent: true,
