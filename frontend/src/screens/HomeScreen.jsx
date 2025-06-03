@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { TrendingUp, Calendar, Sparkles, CheckCircle2, Star, Plus, Edit3 } from 'lucide-react';
 import ExperienceStrings from '../components/ExperienceStrings';
 
@@ -23,6 +23,10 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
   const actualCompletedExperiences = safeExperiences.filter(e => e && e.completed).length;
   const actualCurrentStreak = safeUserStats.currentStreak;
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 w-full mx-auto overflow-x-hidden">
       <div className="relative">
@@ -33,15 +37,15 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
               <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Seren Paths
               </h1>
-              <p className="text-gray-600 text-sm">あなたの成長の軌跡</p>
+              <p className="text-gray-600 text-sm font-bold">新しい自分を発見する旅</p>
             </div>
             {/* 右上の達成度表示 - 確実に表示 */}
             <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
-              <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-2 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
+              <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
                 <TrendingUp className="w-4 h-4 text-purple-600 flex-shrink-0" />
                 <span className="text-sm font-medium text-gray-800 whitespace-nowrap">{actualTotalExperiences}体験</span>
               </div>
-              <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-2 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow border border-pink-100">
+              <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow border border-pink-100">
                 <Calendar className="w-4 h-4 text-pink-600 flex-shrink-0" />
                 <span className="text-sm font-medium text-gray-800 whitespace-nowrap">{actualCurrentStreak}日</span>
               </div>
@@ -130,12 +134,6 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
               <div className="text-6xl mb-4">🌟</div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">すべてのミッション完了！</h3>
               <p className="text-gray-600 mb-4">素晴らしい成果です。新しいお題を探してみましょう。</p>
-              <button
-                onClick={onNavigateToRecommendation}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-300"
-              >
-                新しいお題を見つける
-              </button>
             </div>
           )}
         </div>
@@ -180,5 +178,3 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
 };
 
 export default HomeScreen;
-
-
