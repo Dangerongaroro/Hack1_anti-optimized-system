@@ -16,6 +16,7 @@ import ExperienceDetailModal from './components/ExperienceDetailModal';
 import StringsGalleryScreen from './screens/StringsGalleryScreen';
 import JournalEntryScreen from './screens/JournalEntryScreen';
 import ThemeChallengeScreen from './screens/ThemeChallengeScreen';
+import MissionPopup from './components/MissionPopup';
 
 const App = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState(true);
@@ -40,6 +41,7 @@ const App = () => {
   const [selectedExperience, setSelectedExperience] = useState(null);
   const [challengesInitialized, setChallengesInitialized] = useState(false);
   const [activeThemeChallenge, setActiveThemeChallenge] = useState(null);
+  const [showMissionPopup, setShowMissionPopup] = useState(false);
 
   // generateChallenge関数
   const generateChallenge = async (level) => {
@@ -191,8 +193,13 @@ const App = () => {
       setCurrentChallenge(null);
       api.updatePreferences(updatedExperiences);
       localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
+      setShowMissionPopup(true); // ミッション開始時にポップアップを表示
     }
   }, [currentChallenge, experiences]);
+
+  const handleCloseMissionPopup = useCallback(() => {
+    setShowMissionPopup(false);
+  }, []);
 
   const skipChallenge = useCallback(async (reason) => {
     if (currentChallenge) {
@@ -348,6 +355,12 @@ const App = () => {
               onNavigateToRecommendation={navigateToRecommendation}
             />
           )}
+
+          <MissionPopup
+            isOpen={showMissionPopup}
+            onClose={handleCloseMissionPopup}
+            floatingMissionsCount={experiences.filter(exp => !exp.completed).length}
+          />
         </div>
       </ErrorBoundary>
 
