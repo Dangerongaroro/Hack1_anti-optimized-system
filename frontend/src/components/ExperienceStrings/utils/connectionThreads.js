@@ -117,7 +117,15 @@ const createThreadParticles = (scene, curve, startSphere, endSphere, distance) =
       isThreadParticle: true,
       baseOpacity: 0.6,
       phase: (j / particleCount) * Math.PI * 2,
-      isStatic: true // 位置を固定
+      isStatic: true,
+      // 糸の両端の体験情報を追加
+      startExperience: startSphere.userData.experience,
+      endExperience: endSphere.userData.experience,
+      threadInfo: {
+        from: startSphere.userData.experience.title,
+        to: endSphere.userData.experience.title,
+        position: t // 糸上の位置（0-1）
+      }
     };
     scene.add(particle);
   }

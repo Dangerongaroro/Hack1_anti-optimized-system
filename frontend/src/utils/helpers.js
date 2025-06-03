@@ -130,3 +130,33 @@ export const getThemeColor = (id, category = null) => {
   // それ以外はIDベースの色を生成
   return idToColor(id);
 };
+
+// 有効なカテゴリーのリスト
+export const VALID_CATEGORIES = [
+  'ライフスタイル',
+  'アート・創作',
+  '料理・グルメ',
+  'ソーシャル',
+  '学習・読書',
+  '自然・アウトドア',
+  'スポーツ・運動',
+  'エンタメ',
+  'その他'
+];
+
+// カテゴリーの検証と正規化
+export const normalizeCategory = (category) => {
+  if (!category) return 'その他';
+  
+  // 完全一致
+  if (VALID_CATEGORIES.includes(category)) {
+    return category;
+  }
+  
+  // 部分一致の試行
+  const normalized = VALID_CATEGORIES.find(valid => 
+    valid.includes(category) || category.includes(valid)
+  );
+  
+  return normalized || 'その他';
+};

@@ -1,18 +1,19 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useThreeJSScene } from './hooks/useThreeJSScene';
 import { useThreeJSInteraction } from './hooks/useThreeJSInteraction';
 
 const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
   const canvasRef = useRef(null);
-  const containerRef = useRef(null);  const [hoveredExperience, setHoveredExperience] = useState(null);
+  const containerRef = useRef(null);
+  const [hoveredExperience, setHoveredExperience] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const mouseRef = useRef(new THREE.Vector2());
+
   // Three.jsシーン管理
   const {
     sceneRef,
     cameraRef,
-    // rendererRef, // 現在未使用
     raycasterRef,
     meshesRef,
     particleSystemsRef,
@@ -22,28 +23,51 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     handleResize,
     cleanup
   } = useThreeJSScene(experiences);
+
   // インタラクション管理
   const { handleWheel, handleMouseMove, handleCanvasClick } = useThreeJSInteraction();
 
-  // Canvas描画
+  // モーダルが開いている間はホバー処理を無効化
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleExperienceClickWrapper = useCallback((experienceData) => {
+    console.log('Experience clicked, clearing hover state');
+    setHoveredExperience(null); // ホバー状態をクリア
+    setIsModalOpen(true); // モーダル状態を設定
+    onExperienceClick(experienceData);
+  }, [onExperienceClick]);
+
+  const handleModalClose = useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
+
+  // モーダルが開いている間はマウスイベントを制限
+  const mouseMoveHandler = (e) => {
+    if (!isModalOpen) { // モーダルが開いていない場合のみホバー処理
+      handleMouseMove(
+        e, canvasRef, mouseRef, raycasterRef, cameraRef, meshesRef,
+        hoveredMeshRef, sceneRef, particleSystemsRef,
+        setHoveredExperience, setMousePos
+      );
+    }
+  };
+
+  // Canvas描画とイベントリスナー設定（統一版）
   useEffect(() => {
     if (!canvasRef.current) return;
     
     const canvas = canvasRef.current;
+    console.log('Initializing scene with experiences:', experiences);
+    
     const { stars } = initializeScene(canvas);
     const animationId = startAnimation(stars);
     
     // イベントリスナー
     const resizeHandler = () => handleResize(canvas);
     const wheelHandler = (e) => handleWheel(e, cameraRef);
-    const mouseMoveHandler = (e) => handleMouseMove(
-      e, canvasRef, mouseRef, raycasterRef, cameraRef, meshesRef,
-      hoveredMeshRef, sceneRef, particleSystemsRef,
-      setHoveredExperience, setMousePos
-    );
     const clickHandler = (e) => handleCanvasClick(
       e, canvasRef, mouseRef, raycasterRef, cameraRef, meshesRef,
-      sceneRef, particleSystemsRef, onExperienceClick
+      sceneRef, particleSystemsRef, handleExperienceClickWrapper // ラッパー関数を使用
     );
     
     window.addEventListener('resize', resizeHandler);
@@ -51,8 +75,12 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
     canvas.addEventListener('mousemove', mouseMoveHandler);
     canvas.addEventListener('click', clickHandler);
     
+    console.log('Event listeners set up, meshes count:', meshesRef.current?.length || 0);
+    
     // クリーンアップ
     return () => {
+      console.log('Cleaning up scene');
+      
       if (animationId) {
         cancelAnimationFrame(animationId);
       }
@@ -64,9 +92,7 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
       
       cleanup();
     };
-    
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [experiences, initializeScene, startAnimation, handleResize, handleWheel, handleMouseMove, handleCanvasClick, cleanup, onExperienceClick]);
+  }, [experiences, handleExperienceClickWrapper, isModalOpen]);
 
   return (
     <div className="px-4" ref={containerRef}>
@@ -79,7 +105,8 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
           style={{ background: 'transparent' }}
         />
         
-        {hoveredExperience && (
+        {/* ホバーツールチップ（モーダルが開いていない場合のみ表示） */}
+        {hoveredExperience && !isModalOpen && (
           <div 
             className="absolute z-20 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 pointer-events-none border border-purple-200/50"
             style={{
@@ -89,14 +116,14 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
             }}
           >
             <h4 className="font-semibold text-purple-900 text-sm mb-1">
-              {hoveredExperience.title}
+              {hoveredExperience.title || '無題の体験'}
             </h4>
             <p className="text-xs text-gray-600 mb-2">
-              {hoveredExperience.description || `${hoveredExperience.category}の体験`}
+              {hoveredExperience.description || `${hoveredExperience.category || 'その他'}の体験`}
             </p>
             <div className="flex items-center gap-2">
               <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
-                {hoveredExperience.category}
+                {hoveredExperience.category || 'その他'}
               </span>
               <span className="text-xs px-2 py-1 bg-pink-100 text-pink-700 rounded-full">
                 レベル {hoveredExperience.level || 1}

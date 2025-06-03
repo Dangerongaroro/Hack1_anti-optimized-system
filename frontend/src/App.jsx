@@ -25,9 +25,36 @@ const App = () => {
     challengeFrequency: 'daily'
   });
   const [currentScreen, setCurrentScreen] = useState('home');
-  const [experiences, setExperiences] = useState(
-    initialExperiences.map(exp => ({...exp, date: new Date(exp.date)}))
-  );
+  const [experiences, setExperiences] = useState(() => {
+    // ローカルストレージから読み込む際のデータ検証
+    const savedExperiences = localStorage.getItem('experiences');
+    if (savedExperiences) {
+      try {
+        const parsed = JSON.parse(savedExperiences);
+        // データの検証と正規化
+        return parsed.map((exp, index) => ({
+          id: exp.id || index + 1,
+          title: exp.title || '無題の体験',
+          category: exp.category || 'その他',
+          level: exp.level || 1,
+          completed: exp.completed || false,
+          date: exp.date ? new Date(exp.date) : new Date(),
+          type: exp.type || 'general',
+          ...exp
+        }));
+      } catch (error) {
+        console.error('Failed to parse saved experiences:', error);
+      }
+    }
+    
+    // デフォルトの初期データも正規化
+    return initialExperiences.map(exp => ({
+      ...exp,
+      date: new Date(exp.date),
+      title: exp.title || '無題の体験',
+      category: exp.category || 'その他'
+    }));
+  });
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [challengesByLevel, setChallengesByLevel] = useState({
     1: null,
@@ -178,21 +205,37 @@ const App = () => {
       const newExperience = {
         id: experiences.length + 1,
         date: new Date(),
-        type: currentChallenge.type,
-        level: currentChallenge.level,
-        title: currentChallenge.title,
-        category: currentChallenge.category,
+        type: currentChallenge.type || 'general',
+        level: currentChallenge.level || selectedLevel,
+        title: currentChallenge.title || '新しい体験', // 確実にタイトルを設定
+        category: currentChallenge.category || 'その他',
+        description: currentChallenge.description || '', // 説明も追加
         completed: false,
         deviation: 30 + Math.random() * 60
       };
+      
+      // デバッグログを追加
+      console.log('Creating experience from challenge:', {
+        challenge: currentChallenge,
+        newExperience: newExperience
+      });
+      
       const updatedExperiences = [...experiences, newExperience];
       setExperiences(updatedExperiences);
       setCurrentScreen('home');
       setCurrentChallenge(null);
-      api.updatePreferences(updatedExperiences);
-      localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
+      
+      // 保存時もデータを検証
+      const safeExperiences = updatedExperiences.map(exp => ({
+        ...exp,
+        title: exp.title || '無題の体験',
+        category: exp.category || 'その他'
+      }));
+      
+      localStorage.setItem('experiences', JSON.stringify(safeExperiences));
+      api.updatePreferences(safeExperiences);
     }
-  }, [currentChallenge, experiences]);
+  }, [currentChallenge, experiences, selectedLevel]);
 
   const skipChallenge = useCallback(async (reason) => {
     if (currentChallenge) {
@@ -242,11 +285,43 @@ const App = () => {
     setCurrentScreen('recommendation');
   }, []);
 
-  const handleExperienceClick = useCallback((experience) => {
-    // 体験の詳細表示やアクション処理
-    setSelectedExperience(experience);
-    // 必要に応じて画面遷移
-  }, []);
+  // 体験クリック処理
+  const handleExperienceClick = useCallback((experienceData) => {
+    console.log('=== handleExperienceClick デバッグ ===');
+    console.log('クリックされた体験データ:', experienceData);
+    console.log('体験データの型:', typeof experienceData);
+    console.log('体験データが有効か:', !!experienceData);
+    
+    if (!experienceData) {
+      console.log('無効な体験データのため処理をスキップ');
+      return;
+    }
+    
+    // IDのみの場合は、experiences配列から完全なデータを取得
+    let fullExperience;
+    if (typeof experienceData === 'object' && experienceData.id && Object.keys(experienceData).length === 1) {
+      console.log('IDのみ受信、完全なデータを検索中:', experienceData.id);
+      fullExperience = experiences.find(exp => exp.id === experienceData.id);
+      console.log('検索結果:', fullExperience);
+    } else if (typeof experienceData === 'number') {
+      // IDが数値で直接渡された場合
+      console.log('ID（数値）で検索中:', experienceData);
+      fullExperience = experiences.find(exp => exp.id === experienceData);
+      console.log('検索結果:', fullExperience);
+    } else {
+      // 完全なオブジェクトが渡された場合
+      fullExperience = experienceData;
+    }
+    
+    if (fullExperience) {
+      console.log('selectedExperience に設定する値:', fullExperience);
+      setSelectedExperience(fullExperience);
+      console.log('selectedExperience 設定完了');
+    } else {
+      console.log('体験データが見つからない');
+      console.log('利用可能な体験:', experiences.map(exp => ({ id: exp.id, title: exp.title })));
+    }
+  }, [experiences]);
 
   const navigateToJournalEntry = useCallback(() => {
     setCurrentScreen('journal-entry');
