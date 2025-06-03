@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 
 const OnboardingScreen = ({ onComplete }) => {
@@ -11,6 +11,10 @@ const OnboardingScreen = ({ onComplete }) => {
     goals: []
   });
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentStep]);
+
   const steps = [
     {
       title: "✨ Seren Pathsへようこそ！",
@@ -19,7 +23,7 @@ const OnboardingScreen = ({ onComplete }) => {
     },
     {
       title: "どんなことに興味がありますか？",
-      subtitle: "普段好きなことを教えてください（複数選択可）",
+      subtitle: "",
       type: "interests",
       options: [
         { id: 'art', label: 'アート・創作', emoji: '🎨' },
@@ -33,7 +37,7 @@ const OnboardingScreen = ({ onComplete }) => {
     },
     {
       title: "どのくらい挑戦したい気分ですか？",
-      subtitle: "今のあなたの気持ちに近いものを選んでください",
+      subtitle: "",
       type: "challengeLevel",
       options: [
         { 
