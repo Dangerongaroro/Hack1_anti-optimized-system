@@ -26,8 +26,7 @@ const OnboardingScreen = ({ onComplete }) => {
         { id: 'music', label: '音楽・エンタメ', emoji: '🎵' },
         { id: 'food', label: '料理・グルメ', emoji: '🍽️' },
         { id: 'outdoor', label: '自然・アウトドア', emoji: '🌿' },
-        { id: 'sports', label: 'スポーツ・運動', emoji: '⚽' },
-        { id: 'learning', label: '学習・読書', emoji: '📚' },
+        { id: 'sports', label: '学習・読書', emoji: '📚' },
         { id: 'social', label: 'ソーシャル', emoji: '👥' },
         { id: 'lifestyle', label: 'ライフスタイル', emoji: '🏠' }
       ]
@@ -77,7 +76,7 @@ const OnboardingScreen = ({ onComplete }) => {
       options: [
         { value: 'weekday', label: '平日の空き時間', emoji: '📅' },
         { value: 'weekend', label: '土日・休日', emoji: '🌈' },
-        { value: 'evening', label: '夕方・夜', emoji: '🌙' },
+        { value: 'evening', label: '🌙' },
         { value: 'flexible', label: 'いつでも大丈夫', emoji: '✨' }
       ]
     },
@@ -169,29 +168,11 @@ const OnboardingScreen = ({ onComplete }) => {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
               Seren Paths
             </h1>
-            <p className="text-lg text-gray-700 mb-2">新しい自分を発見する旅</p>
+            <p className="text-base font-bold text-gray-700 mb-8">新しい自分を発見する旅</p>
             <p className="text-gray-600 text-sm">
               普段とは違う体験を通じて<br />
               あなたの可能性を広げましょう
             </p>
-          </div>
-          
-          <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-6 mb-8">
-            <h3 className="font-semibold text-gray-800 mb-3">✨ どんなことができるの？</h3>
-            <div className="space-y-3 text-sm text-gray-600">
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">1</span>
-                <span>あなたに合った新しい体験を提案</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 bg-pink-100 rounded-full flex items-center justify-center text-pink-600 font-bold">2</span>
-                <span>体験の軌跡を美しく記録・可視化</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">3</span>
-                <span>成長を実感して自信をつける</span>
-              </div>
-            </div>
           </div>
           
           <button
