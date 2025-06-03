@@ -75,9 +75,9 @@ export const createOptimizedCompletedSpheres = (scene, experiences, meshesRef) =
   const positions = optimizedThreeUtils.precomputeSpiralPositions(completedExperiences.length);
   
   completedExperiences.forEach((exp, index) => {
-    // mainのsceneSetup.jsと完全一致
+    // 本当の正八面体（detail=0）
     const t = index / Math.max(completedExperiences.length - 1, 1);
-    const geometry = new THREE.OctahedronGeometry(0.2 + t * 0.1, 16, 16);
+    const geometry = new THREE.OctahedronGeometry(0.2 + t * 0.1, 0);
     const colorHex = getThemeColor(exp.id, exp.category);
     const material = optimizedThreeUtils.getMaterial('completed_sphere', colorHex);
     const sphere = new THREE.Mesh(geometry, material);
@@ -115,8 +115,8 @@ export const createOptimizedFloatingMissions = (scene, experiences, meshesRef) =
   const positions = optimizedThreeUtils.precomputeFloatingPositions(incompleteMissions.length);
   
   incompleteMissions.forEach((mission, index) => {
-    // mainのsceneSetup.jsと完全一致
-    const geometry = new THREE.OctahedronGeometry(0.2, 24, 24);
+    // 本当の正八面体（detail=0）
+    const geometry = new THREE.OctahedronGeometry(0.2, 0);
     const colorHex = getThemeColor(mission.id, mission.category);
     const material = optimizedThreeUtils.getMaterial('floating_mission', colorHex);
     const missionMesh = new THREE.Mesh(geometry, material);
