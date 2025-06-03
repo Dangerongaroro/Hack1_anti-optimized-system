@@ -110,10 +110,9 @@ const ExperienceStrings = ({ experiences = [], onExperienceClick }) => {
           </div>
         )}
         
-        <div className="absolute bottom-4 left-4 text-white/80 text-sm z-10">
-          <p className="mb-1">🎯 体験の糸: {experiences.filter(exp => exp.completed).length}本</p>
-          <p>💫 浮遊ミッション: {experiences.filter(exp => !exp.completed).length}個</p>
-        </div>
+<div className="absolute bottom-4 left-4 text-white/80 text-sm z-10">
+  <p className="mb-1">🎯 体験の糸: {experiences.filter(exp => exp.completed).length}本</p>
+</div>
         
         <div className="absolute bottom-4 right-4 text-white/60 text-xs z-10">
           <p>マウスホイール: ズーム</p>
