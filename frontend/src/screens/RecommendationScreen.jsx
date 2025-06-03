@@ -55,12 +55,6 @@ const RecommendationScreen = ({
       <div className="w-full max-w-lg px-4 sm:px-6">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-xl font-bold text-gray-800">今日のお題</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/60 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
         </div>
 
         {/* レベル選択 */}

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Calendar, Download, Play, Pause } from 'lucide-react';
+import NavigationBar from '../components/NavigationBar';
 
-const StringsGalleryScreen = ({ experiences, onBack }) => {
+const StringsGalleryScreen = ({ experiences, onBack, setCurrentScreen }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
@@ -92,16 +93,10 @@ const StringsGalleryScreen = ({ experiences, onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-6 flex flex-col">
+      <div className="max-w-4xl mx-auto flex-grow">
         {/* ヘッダー */}
         <div className="flex items-center mb-6">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-white/60 rounded-full transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6 text-gray-600" />
-          </button>
           <h1 className="text-xl font-bold text-gray-800 ml-3">ストリングス・ギャラリー</h1>
         </div>
 
@@ -218,6 +213,11 @@ const StringsGalleryScreen = ({ experiences, onBack }) => {
           </div>
         </div>
       </div>
+      <NavigationBar 
+        currentScreen="gallery" 
+        setCurrentScreen={setCurrentScreen} 
+        onNavigateToRecommendation={() => setCurrentScreen('recommendation')} // 必要に応じて追加
+      />
     </div>
   );
 };

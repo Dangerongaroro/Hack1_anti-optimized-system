@@ -317,6 +317,7 @@ const App = () => {
             <StringsGalleryScreen
               experiences={experiences}
               onBack={() => setCurrentScreen('home')}
+              setCurrentScreen={setCurrentScreen}
             />
           )}
           {currentScreen === 'journal-entry' && (
