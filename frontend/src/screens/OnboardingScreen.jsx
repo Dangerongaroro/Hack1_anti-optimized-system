@@ -36,7 +36,7 @@ const OnboardingScreen = ({ onComplete }) => {
       ]
     },
     {
-      title: "どのくらい挑戦したい気分ですか？",
+      title: "どれくらい挑戦したいですか？",
       subtitle: "",
       type: "challengeLevel",
       options: [
@@ -62,7 +62,7 @@ const OnboardingScreen = ({ onComplete }) => {
     },
     {
       title: "避けたい体験はありますか？",
-      subtitle: "苦手・避けたいものがあれば教えてください（任意）",
+      subtitle: "",
       type: "avoidCategories",
       options: [
         { id: 'crowded', label: '人混みが多い場所', emoji: '👥' },
@@ -75,24 +75,24 @@ const OnboardingScreen = ({ onComplete }) => {
     },
     {
       title: "いつ挑戦することが多いですか？",
-      subtitle: "ライフスタイルに合わせて提案タイミングを調整します",
+      subtitle: "",
       type: "timePreference",
       options: [
         { value: 'weekday', label: '平日の空き時間', emoji: '📅' },
         { value: 'weekend', label: '土日・休日', emoji: '🌈' },
-        { value: 'evening', label: '🌙' },
-        { value: 'flexible', label: 'いつでも大丈夫', emoji: '✨' }
+        { value: 'evening', label: '夜寝る前', emoji:'🌙' },
+        { value: 'flexible', label: 'いつでも大丈夫', emoji: '👍' }
       ]
     },
     {
       title: "この体験で何を得たいですか？",
-      subtitle: "あなたの目標を教えてください（複数選択可）",
+      subtitle: "",
       type: "goals",
       options: [
         { id: 'discover', label: '新しい自分の発見', emoji: '🔍' },
         { id: 'skills', label: 'スキル・知識の習得', emoji: '🎓' },
         { id: 'refresh', label: 'リフレッシュ・気分転換', emoji: '🌟' },
-        { id: 'social', label: '人とのつながり', emoji: '🤝' },
+        { id: 'social', label: '人とのつながり', emoji: '👨‍👨‍👧‍👦' },
         { id: 'creative', label: '創造性の向上', emoji: '💡' },
         { id: 'confidence', label: '自信をつけたい', emoji: '💪' }
       ]
