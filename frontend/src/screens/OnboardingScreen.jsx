@@ -176,23 +176,6 @@ const OnboardingScreen = ({ onComplete }) => {
             </p>
           </div>
           
-          <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-6 mb-8">
-            <h3 className="font-semibold text-gray-800 mb-3">✨ どんなことができるの？</h3>
-            <div className="space-y-3 text-sm text-gray-600">
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">1</span>
-                <span>あなたに合った新しい体験を提案</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 bg-pink-100 rounded-full flex items-center justify-center text-pink-600 font-bold">2</span>
-                <span>体験の軌跡を美しく記録・可視化</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">3</span>
-                <span>成長を実感して自信をつける</span>
-              </div>
-            </div>
-          </div>
           
           <button
             onClick={handleNext}
