@@ -184,15 +184,6 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
         </div>
       </div>
 
-      {/* 進行中ミッションの説明 */}
-      {stats.floating > 0 && (
-        <div className="mt-6 bg-gradient-to-r from-purple-50/80 to-pink-50/80 backdrop-blur-sm rounded-2xl p-4 border border-purple-200/30">
-          <p className="text-sm text-purple-800">
-            💫 {stats.floating}個の進行中ミッションが浮遊しています。
-            完了すると美しい軌跡を描きながら糸として繋がります！
-          </p>
-        </div>
-      )}
       
       <div className="mt-6 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-sm rounded-2xl p-4 border border-blue-200/30">
         <h3 className="text-lg font-semibold text-blue-900 mb-2">最適化された体験の糸について</h3>

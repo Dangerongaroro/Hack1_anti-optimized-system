@@ -36,10 +36,10 @@ const NavigationBar = ({ currentScreen, setCurrentScreen, onNavigateToRecommenda
             <button
               key={item.id}
               onClick={item.action}
-              className={`flex flex-col items-center py-3 px-4 rounded-lg transition-all duration-200 ${
+              className={`flex flex-col items-center py-3 px-4 rounded-full transition-all duration-200 ${
                 isActive 
                   ? 'text-purple-600 bg-purple-50' 
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  : 'text-gray-500 bg-white hover:text-gray-700 hover:bg-gray-100'
               }`}
             >
               <Icon className={`w-6 h-6 ${isActive ? 'text-purple-600' : ''}`} />

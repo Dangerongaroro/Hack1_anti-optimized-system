@@ -84,6 +84,7 @@ API_BASE_URL=http://localhost:8000
 - **ExperienceStrings.jsx**: 体験文字列表示
 - **ExperienceDetailModal.jsx**: 体験詳細モーダル
 - **IconRenderer.jsx**: アイコン名からコンポーネントをレンダリング
+- **MissionPopup.jsx**: ミッション開始時に表示される進行中ミッション数のポップアップ
 
 ### 画面
 
