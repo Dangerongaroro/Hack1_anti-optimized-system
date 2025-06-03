@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { createStarField, setupLighting, createCompletedSpheres, createFloatingMissions } from '../utils/sceneSetup';
+import { setupLighting, createCompletedSpheres, createFloatingMissions } from '../utils/sceneSetup'; // createStarFieldを削除
 import { createConnectionThreads } from '../utils/connectionThreads';
 import { createServerBasedSpheres, createServerBasedFloatingMissions, createServerBasedConnectionThreads } from '../utils/serverBasedSceneSetup';
 import { useThreeJSAnimation } from './useThreeJSAnimation';
@@ -38,8 +38,8 @@ export const useThreeJSScene = (experiences) => {
     raycasterRef.current.params.Points.threshold = 0.5;
     
     renderer.setSize(rect.width, rect.height);
-    renderer.setClearColor(0x000000, 0);
-    camera.position.z = 5;
+    renderer.setClearColor(0xFFFFFF, 1); // 背景色を白色に設定
+    camera.position.z = 7; // 6から7に変更
     
     // メッシュ配列をクリア
     meshesRef.current = [];
@@ -58,7 +58,7 @@ export const useThreeJSScene = (experiences) => {
       }
       scene.remove(child);
     }    // シーン要素を作成
-    const stars = createStarField(scene);
+    // const stars = createStarField(scene); // 星の作成を削除
     setupLighting(scene);
     
     // サーバー側データまたはクライアント側計算を使用
@@ -75,17 +75,17 @@ export const useThreeJSScene = (experiences) => {
       createFloatingMissions(scene, experiences, meshesRef);
     }
     
-    return { scene, camera, renderer, stars };
+    return { scene, camera, renderer }; // starsを削除
   };
 
 
-  const startAnimation = (stars) => {
+  const startAnimation = () => { // stars引数を削除
     let animationId;
     const animate = () => {
       animationId = requestAnimationFrame(animate);
       
       // 各種アニメーション処理
-      animateStars(stars);
+      // animateStars(stars); // 星のアニメーションを削除
       animateSpheres(meshesRef, hoveredMeshRef, sceneRef.current);
       animateSceneParticles(sceneRef.current);
       animateParticles(sceneRef.current, particleSystemsRef);
