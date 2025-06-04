@@ -77,30 +77,57 @@ class OptimizedThreeUtils {
     this.spiralPositions = positions;
     return positions;
   }
-  
-  /**
-   * 浮遊ミッション位置の事前計算
+    /**
+   * 浮遊ミッション位置の事前計算（完了済み体験の最後の位置から続くように配置）
    */
-  precomputeFloatingPositions(count) {
+  precomputeFloatingPositions(count, completedSpherePositions = []) {
     if (this.floatingPositions && this.floatingPositions.length === count) {
       return this.floatingPositions;
     }
     
     const positions = [];
-    const floatRadius = 4.0;
     
-    for (let i = 0; i < count; i++) {
-      const baseAngle = (i / Math.max(count, 1)) * Math.PI * 2;
-      const seed = i + 2000;
+    if (completedSpherePositions.length === 0) {
+      // 完了済み体験がない場合は中心付近に配置
+      for (let i = 0; i < count; i++) {
+        const baseAngle = (i / Math.max(count, 1)) * Math.PI * 2;
+        const seed = i + 2000;
+        
+        const x = Math.cos(baseAngle) * 2.0;
+        const y = Math.sin(baseAngle) * 2.0;
+        const z = this.seededRandom(seed * 3.456) * 2 - 1;
+        
+        positions.push({ x, y, z, seed });
+      }
+    } else {
+      // 完了済み体験の最後の位置から続くように配置
+      const lastPosition = completedSpherePositions[completedSpherePositions.length - 1];
+      const spiralContinuation = completedSpherePositions.length;
       
-      const heightOffset = this.seededRandom(seed * 3.456) * 2 - 1;
-      const radiusOffset = this.seededRandom(seed * 4.567) * 0.5;
-      
-      const x = Math.cos(baseAngle) * (floatRadius + radiusOffset);
-      const y = Math.sin(baseAngle) * (floatRadius + radiusOffset);
-      const z = Math.sin(baseAngle * 2) * 1.5 + heightOffset;
-      
-      positions.push({ x, y, z, seed });
+      for (let i = 0; i < count; i++) {
+        const totalIndex = spiralContinuation + i;
+        const t = totalIndex / Math.max(totalIndex, 1);
+        const angle = t * 2 * Math.PI * 2; // らせんの続き
+        const depth = lastPosition.z + (i + 1) * 0.8; // 奥に向かって続く
+        const radiusVariation = 2.5 + t * 0.5; // 少し外側に
+        
+        const seed = i + 2000;
+        const angleOffset = (this.seededRandom(seed * 1.234) - 0.5) * Math.PI / 4;
+        const finalAngle = angle + angleOffset;
+        
+        const x = Math.cos(finalAngle) * radiusVariation;
+        const y = Math.sin(finalAngle) * radiusVariation;
+        const z = depth;
+        
+        const heightOffset = (this.seededRandom(seed * 3.456) - 0.5) * 1.0;
+        
+        positions.push({ 
+          x: x, 
+          y: y + heightOffset, 
+          z: z, 
+          seed 
+        });
+      }
     }
     
     this.floatingPositions = positions;
@@ -116,16 +143,15 @@ class OptimizedThreeUtils {
     if (!this.materialPool.has(key)) {
       let material;
       
-      switch (type) {
-        case 'completed_sphere':
+      switch (type) {        case 'completed_sphere':
           material = new THREE.MeshStandardMaterial({
             color: new THREE.Color(color),
             transparent: true,
-            opacity: 0.85,
-            metalness: 0.3,
-            roughness: 0.2,
+            opacity: 0.95,
+            metalness: 0.4,
+            roughness: 0.05,
             emissive: new THREE.Color(color),
-            emissiveIntensity: 0.3,
+            emissiveIntensity: 0.8, // さらに発光強度を増加
             ...options
           });
           break;
@@ -134,11 +160,11 @@ class OptimizedThreeUtils {
           material = new THREE.MeshStandardMaterial({
             color: new THREE.Color(color),
             transparent: true,
-            opacity: 0.85,
-            metalness: 0.05,
-            roughness: 0.2,
-            emissive: new THREE.Color(color).multiplyScalar(0.15),
-            emissiveIntensity: 0.3,
+            opacity: 0.95,
+            metalness: 0.1,
+            roughness: 0.05,
+            emissive: new THREE.Color(color).multiplyScalar(0.6),
+            emissiveIntensity: 0.7, // 発光強度を増加
             ...options
           });
           break;
@@ -152,13 +178,11 @@ class OptimizedThreeUtils {
             emissiveIntensity: 0.2,
             ...options
           });
-          break;
-          
-        case 'particle':
+          break;        case 'particle':
           material = new THREE.MeshBasicMaterial({
             color: new THREE.Color(color),
             transparent: true,
-            opacity: 0.4,
+            opacity: 0.9,
             blending: THREE.AdditiveBlending,
             ...options
           });

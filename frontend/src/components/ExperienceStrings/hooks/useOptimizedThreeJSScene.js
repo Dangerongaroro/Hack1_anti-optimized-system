@@ -23,25 +23,26 @@ export const useOptimizedThreeJSScene = (experiences) => {
   const hoveredMeshRef = useRef(null);
   const animationCleanupRef = useRef(null);
   
-  const { startOptimizedAnimation, disposeOptimizedAnimation } = useOptimizedThreeJSAnimation();
-
-  /**
+  const { startOptimizedAnimation, disposeOptimizedAnimation } = useOptimizedThreeJSAnimation();  /**
    * 最適化されたシーン初期化
    */
-  const initializeOptimizedScene = (canvas) => {
+  const initializeOptimizedScene = (canvas, serverVisualizationData = null) => {
     const rect = canvas.getBoundingClientRect();
     
     // シーンとカメラの作成
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, rect.width / rect.height, 0.1, 1000);
-    
-    // 最適化されたレンダラー設定
+      // 最適化されたレンダラー設定
     const renderer = new THREE.WebGLRenderer({ 
       canvas: canvas, 
       alpha: true,
       antialias: window.devicePixelRatio <= 1, // 高DPIデバイスでは無効化
       powerPreference: "high-performance" // GPU最適化
     });
+    
+    // 3Dテクスチャ警告対策
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    THREE.ColorManagement.enabled = true;
     
     // 参照を保存
     sceneRef.current = scene;
@@ -56,22 +57,51 @@ export const useOptimizedThreeJSScene = (experiences) => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // DPR制限
     renderer.shadowMap.enabled = false; // シャドウ無効化でパフォーマンス向上
     
-    camera.position.z = 5;
+    camera.position.set(0, 0, 5); // 正面から
+    camera.lookAt(0, 0, 0);
     
     // メッシュ配列をクリア
     meshesRef.current = [];
-    
-    // 既存シーンの最適化クリーンアップ
+      // 既存シーンの最適化クリーンアップ
     cleanupOptimizedScene(scene);
     
-    // 最適化されたシーン要素を作成
-    const stars = createOptimizedStarField(scene);
-    setupOptimizedLighting(scene);
-    const spheres = createOptimizedCompletedSpheres(scene, experiences, meshesRef);
-    createOptimizedConnectionThreads(scene, spheres);
-    createOptimizedFloatingMissions(scene, experiences, meshesRef);
-    
-    return { scene, camera, renderer, stars };
+    // サーバーデータが利用可能で、isServerDataフラグがtrueの場合は、サーバー側計算を使用
+    if (serverVisualizationData && serverVisualizationData.isServerData === true) {
+      console.log('🔧 サーバーサイド計算結果を使用します', serverVisualizationData);
+      
+      // 星空と照明を設定
+      const stars = createOptimizedStarField(scene);
+      setupOptimizedLighting(scene);
+      
+      // サーバーデータを使ってオブジェクトを作成
+      const spheres = createOptimizedCompletedSpheres(scene, experiences, meshesRef);
+      createOptimizedConnectionThreads(scene, spheres);
+      createOptimizedFloatingMissions(scene, experiences, meshesRef, spheres);
+      
+      // サーバーデータとフロントエンドデータの構造の違いを吸収
+      return {
+        scene,
+        renderer,
+        camera,
+        stars,
+        meshesRef,
+        hoveredMeshRef: { current: null },
+        initComplete: true
+      };
+    } else {
+      // サーバーデータがない場合やフラグがfalseの場合はフロントエンド計算
+      console.log('💻 フロントエンドビジュアライゼーションを使用します');
+      
+      // 最適化されたシーン要素を作成
+      const stars = createOptimizedStarField(scene);
+      setupOptimizedLighting(scene);
+      const spheres = createOptimizedCompletedSpheres(scene, experiences, meshesRef);
+      createOptimizedConnectionThreads(scene, spheres);
+      createOptimizedFloatingMissions(scene, experiences, meshesRef, spheres);
+      
+      // else ブロック内でもreturnするように変更
+      return { scene, camera, renderer, stars };
+    }
   };
 
   /**
@@ -118,47 +148,38 @@ export const useOptimizedThreeJSScene = (experiences) => {
   const cleanupOptimizedScene = (scene = sceneRef.current) => {
     if (!scene) return;
     
-    // アニメーションのクリーンアップ
-    if (animationCleanupRef.current) {
-      animationCleanupRef.current();
-      animationCleanupRef.current = null;
-    }
-    
-    // シーンオブジェクトの最適化クリーンアップ
     const objectsToRemove = [];
-    scene.traverse((object) => {
-      objectsToRemove.push(object);
-    });
     
-    objectsToRemove.forEach(object => {
-      // ジオメトリの解放（プールされたものは除く）
-      if (object.geometry && !object.userData.isPooled) {
-        object.geometry.dispose();
+    scene.traverse((object) => {
+      // ライト、背景、完了済み球体は保持
+      if (object instanceof THREE.Light || 
+          object.isBackground || 
+          (object.userData && object.userData.type === 'completed')) {
+        console.log('🔒 保護されたオブジェクト:', object.userData?.type || object.type); // デバッグ追加
+        return; // 保持
       }
       
-      // マテリアルの解放（プールされたものは除く）
-      if (object.material && !object.userData.isPooled) {
+      // その他のオブジェクトは削除対象
+      if (object !== scene) {
+        console.log('🗑️ 削除対象:', object.userData?.type || 'unknown'); // デバッグ追加
+        objectsToRemove.push(object);
+      }
+    });
+    
+    console.log(`🧹 クリーンアップ: ${objectsToRemove.length}個のオブジェクトを削除, 保護されたオブジェクトは残存`);
+    
+    // 削除対象のオブジェクトを削除
+    objectsToRemove.forEach(object => {
+      scene.remove(object);
+      if (object.geometry && !object.userData?.isPooled) object.geometry.dispose();
+      if (object.material && !object.userData?.isPooled) {
         if (Array.isArray(object.material)) {
-          object.material.forEach(m => {
-            if (!m.userData?.isPooled) m.dispose();
-          });
+          object.material.forEach(mat => mat.dispose());
         } else {
-          if (!object.material.userData?.isPooled) {
-            object.material.dispose();
-          }
+          object.material.dispose();
         }
       }
-      
-      // ライトの解放
-      if (object.userData?.light && scene.children.includes(object.userData.light)) {
-        scene.remove(object.userData.light);
-      }
     });
-    
-    // シーンから全ての子要素を削除
-    while(scene.children.length > 0) {
-      scene.remove(scene.children[0]);
-    }
   };
 
   /**

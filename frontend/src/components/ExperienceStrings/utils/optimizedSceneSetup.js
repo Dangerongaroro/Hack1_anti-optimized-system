@@ -7,12 +7,13 @@ import { optimizedThreeUtils } from './optimizedThreeUtils';
  * リソースプーリングと事前計算を使用
  */
 
-// 最適化された星空作成
+// 最適化された星空作成（美しい星空）
 export const createOptimizedStarField = (scene) => {
   const starsGeometry = new THREE.BufferGeometry();
-  const starCount = 1000;
+  const starCount = 1500; // 少し密度を上げる
   const positions = new Float32Array(starCount * 3);
   const colors = new Float32Array(starCount * 3);
+  const sizes = new Float32Array(starCount); // サイズ属性を追加
   
   for (let i = 0; i < starCount; i++) {
     const i3 = i * 3;
@@ -21,33 +22,77 @@ export const createOptimizedStarField = (scene) => {
     const seed2 = optimizedThreeUtils.seededRandom(i * 78.233);
     const seed3 = optimizedThreeUtils.seededRandom(i * 39.346);
     
-    positions[i3] = (seed1 - 0.5) * 50;
-    positions[i3 + 1] = (seed2 - 0.5) * 50;
-    positions[i3 + 2] = -20 + seed3 * 20;
+    // 球状に星を配置して視点変更時の隙間を防ぐ
+    const radius = 40 + seed3 * 40; // 40-80の距離に配置
+    const theta = seed1 * Math.PI * 2; // 水平角度
+    const phi = seed2 * Math.PI; // 垂直角度
     
+    positions[i3] = radius * Math.sin(phi) * Math.cos(theta);     // X
+    positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta); // Y
+    positions[i3 + 2] = radius * Math.cos(phi);                   // Z    
+    // 美しい星の色設定
     const color = new THREE.Color();
-    const hue = seed1 * 360;
-    color.setHSL(hue, 0.5, 0.5 + seed2 * 0.5);
+    if (seed1 < 0.5) {
+      // 白い星（明るめ）
+      color.setHSL(0.15, 0.2, 0.7 + seed2 * 0.3);
+    } else if (seed1 < 0.75) {
+      // 青い星（美しい）
+      color.setHSL(0.6, 0.5, 0.6 + seed2 * 0.4);
+    } else if (seed1 < 0.9) {
+      // 黄色い星
+      color.setHSL(0.1, 0.6, 0.5 + seed2 * 0.4);
+    } else {
+      // 赤い星（少し）
+      color.setHSL(0.0, 0.7, 0.4 + seed2 * 0.3);
+    }
+    
     colors[i3] = color.r;
     colors[i3 + 1] = color.g;
     colors[i3 + 2] = color.b;
+    
+    // 星のサイズに変化を
+    sizes[i] = 0.3 + seed3 * 1.2; // 0.3から1.5の範囲
   }
   
   starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   starsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  starsGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
   
   const starsMaterial = new THREE.PointsMaterial({
-    size: 0.1,
+    size: 0.8,
     vertexColors: true,
     transparent: true,
-    opacity: 0.6,
-    blending: THREE.AdditiveBlending
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true,
+    map: createStarTexture() // 星のテクスチャを追加
   });
-  
-  const stars = new THREE.Points(starsGeometry, starsMaterial);
+    const stars = new THREE.Points(starsGeometry, starsMaterial);
   scene.add(stars);
+    return stars;
+};
+
+// 星のテクスチャを作成
+const createStarTexture = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 32;
+  const context = canvas.getContext('2d');
   
-  return stars;
+  // 放射状グラデーション
+  const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+  gradient.addColorStop(0.4, 'rgba(255,255,255,0.4)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 32, 32);
+    const texture = new THREE.CanvasTexture(canvas);
+  // 3Dテクスチャ関連の警告を防止
+  texture.flipY = false;
+  texture.premultiplyAlpha = false;
+  return texture;
 };
 
 // 最適化された照明設定
@@ -93,9 +138,8 @@ export const createOptimizedCompletedSpheres = (scene, experiences, meshesRef) =
       seed: exp.id || index,
       spiralIndex: index,
       depth: pos.z
-    };
-    // 最適化されたポイントライト
-    const light = new THREE.PointLight(new THREE.Color(colorHex), 0.5, 2);
+    };    // 最適化されたポイントライト（より強力）
+    const light = new THREE.PointLight(new THREE.Color(colorHex), 0.8, 3);
     light.position.copy(sphere.position);
     sphere.userData.light = light;
     scene.add(light);
@@ -108,11 +152,14 @@ export const createOptimizedCompletedSpheres = (scene, experiences, meshesRef) =
 };
 
 // 最適化された浮遊ミッション作成
-export const createOptimizedFloatingMissions = (scene, experiences, meshesRef) => {
+export const createOptimizedFloatingMissions = (scene, experiences, meshesRef, completedSpheres = []) => {
   const incompleteMissions = experiences.filter(exp => !exp.completed);
   
-  // 事前計算された位置を取得
-  const positions = optimizedThreeUtils.precomputeFloatingPositions(incompleteMissions.length);
+  // 完了済み球体の位置情報を取得
+  const completedPositions = completedSpheres.map(sphere => sphere.position);
+  
+  // 事前計算された位置を取得（完了済み位置を考慮）
+  const positions = optimizedThreeUtils.precomputeFloatingPositions(incompleteMissions.length, completedPositions);
   
   incompleteMissions.forEach((mission, index) => {
     // 本当の正八面体（detail=0）
@@ -130,9 +177,15 @@ export const createOptimizedFloatingMissions = (scene, experiences, meshesRef) =
       seed: pos.seed,
       basePosition: missionMesh.position.clone(),
       positionFixed: true
-    };
-    scene.add(missionMesh);
+    };    scene.add(missionMesh);
     meshesRef.current.push(missionMesh);
+    
+    // 浮遊ミッションにもライトを追加
+    const missionLight = new THREE.PointLight(new THREE.Color(colorHex), 0.6, 2.5);
+    missionLight.position.copy(missionMesh.position);
+    missionMesh.userData.light = missionLight;
+    scene.add(missionLight);
+    
     // 最適化されたパーティクル効果（固定位置）
     createOptimizedMissionParticles(scene, missionMesh, colorHex, pos.seed);
   });
@@ -203,18 +256,23 @@ const createOptimizedThreadSegments = (scene, curveData, startSphere, endSphere)
     const direction = new THREE.Vector3().subVectors(nextPoint, currentPoint);
     const length = direction.length();
     direction.normalize();
-    
-    // 色のグラデーション
+      // 色のグラデーション
     const t = j / (points.length - 1);
-    const segmentColor = new THREE.Color().lerpColors(
-      new THREE.Color(getThemeColor(startSphere.userData.experience.id)),
-      new THREE.Color(getThemeColor(endSphere.userData.experience.id)),
-      t
-    );
+    const startColor = startSphere.material.color;
+    const endColor = endSphere.material.color;
+    const segmentColor = new THREE.Color().lerpColors(startColor, endColor, t);
+      // 発光効果を強化したマテリアル
+    const enhancedThreadMaterial = new THREE.MeshPhongMaterial({
+      color: segmentColor,
+      transparent: true,
+      opacity: 0.95,
+      emissive: segmentColor,
+      emissiveIntensity: 0.6, // 発光強度をさらに増加
+      shininess: 150,
+      specular: new THREE.Color(0xffffff).multiplyScalar(0.5)
+    });
     
-    // プールからマテリアルを取得
-    const cylinderMaterial = optimizedThreeUtils.getMaterial('thread', segmentColor);
-    const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+    const cylinder = new THREE.Mesh(cylinderGeometry, enhancedThreadMaterial);
     
     // スケールで長さを調整
     cylinder.scale.set(1, length, 1);
@@ -235,7 +293,7 @@ const createOptimizedThreadSegments = (scene, curveData, startSphere, endSphere)
 // 最適化された糸パーティクル作成
 const createOptimizedThreadParticles = (scene, curveData, startSphere, endSphere) => {
   const { curve, distance } = curveData;
-  const particleCount = Math.max(3, Math.floor(distance * 2)); // パーティクル数を削減
+  const particleCount = Math.max(5, Math.floor(distance * 3)); // パーティクル数を増加
   
   // プールからジオメトリを取得
   const particleGeometry = optimizedThreeUtils.geometryPool.particle_small;
@@ -250,20 +308,28 @@ const createOptimizedThreadParticles = (scene, curveData, startSphere, endSphere
       new THREE.Color(getThemeColor(endSphere.userData.experience.id)),
       t
     );
-    
-    // プールからマテリアルを取得
-    const particleMaterial = optimizedThreeUtils.getMaterial('particle', particleColor, {
-      opacity: 0.6,
+      // 強化された発光パーティクル
+    const enhancedParticleMaterial = new THREE.MeshBasicMaterial({
+      color: particleColor,
+      transparent: true,
+      opacity: 0.9,
       blending: THREE.AdditiveBlending
     });
     
-    const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+    const particle = new THREE.Mesh(particleGeometry, enhancedParticleMaterial);
     particle.position.copy(point);
+    
+    // パーティクルに小さなポイントライトを追加
+    const particleLight = new THREE.PointLight(particleColor, 0.3, 1.5);
+    particleLight.position.copy(point);
+    scene.add(particleLight);
+    
     particle.userData = {
       isThreadParticle: true,
-      baseOpacity: 0.6,
+      baseOpacity: 0.9,
       phase: (j / particleCount) * Math.PI * 2,
-      isStatic: true
+      isStatic: true,
+      light: particleLight
     };
     
     scene.add(particle);
@@ -274,3 +340,79 @@ const createOptimizedThreadParticles = (scene, curveData, startSphere, endSphere
 export const disposeOptimizedScene = () => {
   optimizedThreeUtils.dispose();
 };
+
+// convertMissionToCompletedSphere関数をexportとして追加
+export function convertMissionToCompletedSphere(scene, missionMesh, targetMesh) {
+  try {
+    // ミッションのマテリアルを完了済み球体のマテリアルに変更
+    const experience = missionMesh.userData.experience;
+    if (!experience) {
+      console.warn('⚠️ ミッション体験データが見つかりません');
+      return;
+    }
+
+    const colorHex = getThemeColor(experience.id, experience.category);
+    const completedMaterial = optimizedThreeUtils.getMaterial('completed_sphere', colorHex);
+    
+    // マテリアルを変更
+    if (missionMesh.material && !missionMesh.userData?.isPooled) {
+      missionMesh.material.dispose(); // 古いマテリアルを解放
+    }
+    missionMesh.material = completedMaterial;
+    
+    // userDataを更新
+    missionMesh.userData.type = 'completed';
+    missionMesh.userData.experience.completed = true;
+    
+    // ライトの色も更新
+    if (missionMesh.userData.light) {
+      missionMesh.userData.light.color.setHex(colorHex);
+      missionMesh.userData.light.intensity = 0.8; // 完了済みのライト強度
+    }
+    
+    // 完了済み球体のスケールに調整
+    missionMesh.scale.setScalar(1.0);
+    
+    console.log('✅ ミッションを完了済み球体に変換しました:', experience.title);
+  } catch (error) {
+    console.error('❌ ミッション変換中にエラーが発生しました:', error);
+  }
+}
+
+export function animateAttachFloatingMission(scene, missionMesh, targetMesh, onComplete) {
+  const duration = 400; // ms
+  const start = { ...missionMesh.position };
+  const end = { ...targetMesh.position };
+  const startTime = performance.now();
+
+  function animate(now) {
+    const t = Math.min((now - startTime) / duration, 1);
+    // 線形補間
+    missionMesh.position.x = start.x + (end.x - start.x) * t;
+    missionMesh.position.y = start.y + (end.y - start.y) * t;
+    missionMesh.position.z = start.z + (end.z - start.z) * t;
+
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      // クリーンアップ（パーティクルやライトのみ）
+      if (missionMesh.userData.trailGroup) {
+        scene.remove(missionMesh.userData.trailGroup);
+        missionMesh.userData.trailGroup.traverse(child => {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) child.material.dispose();
+        });
+        missionMesh.userData.trailGroup = null;
+      }
+      
+      // ミッションメッシュを削除せず、完了済み球体として変換
+      convertMissionToCompletedSphere(scene, missionMesh, targetMesh);
+      
+      // 状態更新を少し遅延させる（変換完了後に実行）
+      setTimeout(() => {
+        if (typeof onComplete === 'function') onComplete();
+      }, 50); // 50ms遅延
+    }
+  }
+  requestAnimationFrame(animate);
+}
