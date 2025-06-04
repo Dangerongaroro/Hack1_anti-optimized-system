@@ -354,15 +354,15 @@ export function convertMissionToCompletedSphere(scene, missionMesh, targetMesh) 
     const colorHex = getThemeColor(experience.id, experience.category);
     const completedMaterial = optimizedThreeUtils.getMaterial('completed_sphere', colorHex);
     
-    // マテリアルを変更
+    // マテリアルを変更（メモリリーク対策）
     if (missionMesh.material && !missionMesh.userData?.isPooled) {
       missionMesh.material.dispose(); // 古いマテリアルを解放
     }
     missionMesh.material = completedMaterial;
     
-    // userDataを更新
+    // userDataを更新（完了状態を即座に反映）
     missionMesh.userData.type = 'completed';
-    missionMesh.userData.experience.completed = true;
+    missionMesh.userData.experience = { ...experience, completed: true };
     
     // ライトの色も更新
     if (missionMesh.userData.light) {
@@ -384,13 +384,16 @@ export function animateAttachFloatingMission(scene, missionMesh, targetMesh, onC
   const start = { ...missionMesh.position };
   const end = { ...targetMesh.position };
   const startTime = performance.now();
-
   function animate(now) {
     const t = Math.min((now - startTime) / duration, 1);
+    
+    // より滑らかな補間（ease-in-out）
+    const easeT = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    
     // 線形補間
-    missionMesh.position.x = start.x + (end.x - start.x) * t;
-    missionMesh.position.y = start.y + (end.y - start.y) * t;
-    missionMesh.position.z = start.z + (end.z - start.z) * t;
+    missionMesh.position.x = start.x + (end.x - start.x) * easeT;
+    missionMesh.position.y = start.y + (end.y - start.y) * easeT;
+    missionMesh.position.z = start.z + (end.z - start.z) * easeT;
 
     if (t < 1) {
       requestAnimationFrame(animate);
@@ -404,14 +407,13 @@ export function animateAttachFloatingMission(scene, missionMesh, targetMesh, onC
         });
         missionMesh.userData.trailGroup = null;
       }
-      
-      // ミッションメッシュを削除せず、完了済み球体として変換
+        // ミッションメッシュを削除せず、完了済み球体として変換
       convertMissionToCompletedSphere(scene, missionMesh, targetMesh);
       
-      // 状態更新を少し遅延させる（変換完了後に実行）
-      setTimeout(() => {
-        if (typeof onComplete === 'function') onComplete();
-      }, 50); // 50ms遅延
+      // 状態更新を即座に実行（遅延を削除）
+      if (typeof onComplete === 'function') {
+        onComplete();
+      }
     }
   }
   requestAnimationFrame(animate);

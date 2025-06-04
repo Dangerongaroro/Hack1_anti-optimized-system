@@ -64,8 +64,7 @@ const App = () => {
   });
   const [currentChallenge, setCurrentChallenge] = useState(null);
   const [journalEntry, setJournalEntry] = useState({ title: '', category: '', emotion: '' });
-  const [userStats, setUserStats] = useState(initialUserStats);
-  const [selectedExperience, setSelectedExperience] = useState(null);
+  const [userStats, setUserStats] = useState(initialUserStats);  const [selectedExperience, setSelectedExperience] = useState(null);
   const [challengesInitialized, setChallengesInitialized] = useState(false);
   const [activeThemeChallenge, setActiveThemeChallenge] = useState(null);
   const [showMissionPopup, setShowMissionPopup] = useState(false);
@@ -269,22 +268,34 @@ const App = () => {
     await api.updatePreferences(updatedExperiences);
     localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
   }, [experiences]);
-
   const handleClearMission = useCallback((experienceId) => {
+    console.log('🎯 ミッション完了処理開始:', experienceId);
+    
     const updatedExperiences = experiences.map(exp =>
       exp.id === experienceId ? { ...exp, completed: true } : exp
     );
+    
+    // 状態更新とデータ保存を効率的に実行
     setExperiences(updatedExperiences);
-    setSelectedExperience(null);
-    api.updatePreferences(updatedExperiences);
-    localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
-  }, [experiences]);
+    
+    // モーダルを閉じる（不要な再描画を防ぐ）
+    if (selectedExperience && selectedExperience.id === experienceId) {
+      setSelectedExperience(null);
+    }
+    
+    // バックグラウンドでデータ保存
+    Promise.resolve().then(() => {
+      api.updatePreferences(updatedExperiences);
+      localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
+    });
+    
+    console.log('✅ ミッション完了処理完了:', experienceId);
+  }, [experiences, selectedExperience]);
 
   const navigateToRecommendation = useCallback(() => {
     setCurrentScreen('recommendation');
   }, []);
-
-  // 体験クリック処理
+  // 体験クリック処理（初期化問題を防ぐため最適化）
   const handleExperienceClick = useCallback((experienceData) => {
     console.log('=== handleExperienceClick デバッグ ===');
     console.log('クリックされた体験データ:', experienceData);
@@ -314,7 +325,8 @@ const App = () => {
     
     if (fullExperience) {
       console.log('selectedExperience に設定する値:', fullExperience);
-      setSelectedExperience(fullExperience);
+      // オブジェクトの参照を新しく作成して変更を検知させる
+      setSelectedExperience({...fullExperience});
       console.log('selectedExperience 設定完了');
     } else {
       console.log('体験データが見つからない');

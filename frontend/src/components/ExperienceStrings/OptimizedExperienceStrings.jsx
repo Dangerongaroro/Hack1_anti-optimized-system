@@ -2,11 +2,6 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useOptimizedThreeJSScene } from './hooks/useOptimizedThreeJSScene';
 import { useServerVisualization } from './hooks/useServerVisualization';
-import { 
-  // 既存のインポート
-  animateAttachFloatingMission,
-  convertMissionToCompletedSphere  // 追加
-} from './utils/optimizedSceneSetup';
 
 /**
  * 最適化されたExperienceStringsコンポーネント（ホバー機能なし）
@@ -35,7 +30,6 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     tapStartPos: { x: 0, y: 0 },
     isTap: false
   });
-
   // 最適化されたThree.jsシーン管理
   const {
     cameraRef,
@@ -46,48 +40,13 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     cleanup,
     getInteractableMeshes,
     sceneRef  // 追加: シーン参照
-  } = useOptimizedThreeJSScene(experiences);  // 最適化されたクリックハンドラー
-  // 新しい関数：浮遊ミッション達成処理
-const handleFloatingMissionClick = useCallback((missionMesh) => {
-  // 最も近い完了済み球体を見つける
-  const completedSpheres = getInteractableMeshes().filter(mesh => mesh.userData.type === 'completed');
-  if (completedSpheres.length === 0) {
-    // 完了済み球体がない場合は、中心位置をターゲットにする
-    const targetPosition = { x: 0, y: 0, z: 0 };
-    
-    // アニメーション開始
-    animateAttachFloatingMission(
-      sceneRef.current, 
-      missionMesh, 
-      { position: targetPosition }, 
-      () => {
-        // アニメーション完了後に状態更新
-        if (onExperienceClick) {
-          onExperienceClick(missionMesh.userData.experience);
-        }
-      }
-    );
-    return;
-  }
-  
-  // 最後の完了済み球体をターゲットにする
-  const targetMesh = completedSpheres[completedSpheres.length - 1];
-  
-  // アニメーション開始
-  animateAttachFloatingMission(
-    sceneRef.current, 
-    missionMesh, 
-    targetMesh, 
-    () => {
-      // アニメーション完了後に状態更新
-      if (onExperienceClick) {
-        onExperienceClick(missionMesh.userData.experience);
-      }
-    }
-  );
-}, [onExperienceClick, getInteractableMeshes, sceneRef]);
+  } = useOptimizedThreeJSScene(experiences);
+
+  // 最適化されたクリックハンドラー
   const optimizedClickHandler = useCallback((e) => {
     if (!isInitialized || !canvasRef.current) return;
+    
+    console.log('🖱️ クリック処理開始');
     
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -97,22 +56,40 @@ const handleFloatingMissionClick = useCallback((missionMesh) => {
     mouseRef.current.y = -(y / rect.height) * 2 + 1;
 
     const meshes = getInteractableMeshes();
+    console.log('📋 クリック可能なメッシュ数:', meshes.length);
+    
     if (raycasterRef.current && cameraRef.current && meshes.length > 0) {
       raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
       const intersects = raycasterRef.current.intersectObjects(meshes);
       
+      console.log('🎯 レイキャスト結果:', intersects.length, 'つのオブジェクトがヒット');
+      
       if (intersects.length > 0) {
         const clickedObject = intersects[0].object;
+        const userData = clickedObject.userData;
         
-        // 浮遊ミッションがクリックされた場合
-        if (clickedObject.userData.type === 'floating') {
-          handleFloatingMissionClick(clickedObject);
-        } else if (clickedObject.userData.experience && onExperienceClick) {
-          onExperienceClick(clickedObject.userData.experience);
+        console.log('📦 クリックされたオブジェクト:', {
+          type: userData.type,
+          experienceId: userData.experience?.id,
+          experienceTitle: userData.experience?.title,
+          isCompleted: userData.experience?.completed
+        });
+        
+        // 浮遊ミッションの場合は詳細表示のみ（自動処理は無効化）
+        if (userData.type === 'floating') {
+          console.log('🎈 浮遊ミッションクリック - 詳細表示のみ実行');
+          if (userData.experience && onExperienceClick) {
+            onExperienceClick(userData.experience);
+          }
+        } else if (userData.experience && onExperienceClick) {
+          console.log('⚪ 完了済み球体クリック - 詳細表示実行');
+          onExperienceClick(userData.experience);
         }
+      } else {
+        console.log('❌ クリック対象が見つかりませんでした');
       }
     }
-  }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef, handleFloatingMissionClick]);
+  }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef]);
 
   // 最適化されたホイールハンドラー
   const optimizedWheelHandler = useCallback((e) => {
@@ -270,9 +247,10 @@ const handleFloatingMissionClick = useCallback((missionMesh) => {
     if (touchState.current.isTap && isInitialized && canvasRef.current) {
       const touchEndTime = Date.now();
       const tapDuration = touchEndTime - touchState.current.tapStartTime;
-      
-      // タップの時間が短い場合（300ms以下）にクリック処理を実行
+        // タップの時間が短い場合（300ms以下）にクリック処理を実行
       if (tapDuration < 300) {
+        console.log('📱 タッチタップ処理開始');
+        
         // レイキャスト処理でタップされたオブジェクトを検出
         const rect = canvasRef.current.getBoundingClientRect();
         const x = touchState.current.tapStartPos.x - rect.left;
@@ -282,16 +260,33 @@ const handleFloatingMissionClick = useCallback((missionMesh) => {
         mouseRef.current.y = -(y / rect.height) * 2 + 1;
 
         const meshes = getInteractableMeshes();
+        console.log('📋 タップ可能なメッシュ数:', meshes.length);
+        
         if (raycasterRef.current && cameraRef.current && meshes.length > 0) {
           raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
           const intersects = raycasterRef.current.intersectObjects(meshes);
           
-          if (intersects.length > 0) {
+          console.log('🎯 タップレイキャスト結果:', intersects.length, 'つのオブジェクトがヒット');
+            if (intersects.length > 0) {
             const tappedObject = intersects[0].object;
-            if (tappedObject.userData.experience && onExperienceClick) {
-              console.log('タップされた体験:', tappedObject.userData.experience.title);
-              onExperienceClick(tappedObject.userData.experience);
-            }
+            const userData = tappedObject.userData;
+            
+            console.log('📦 タップされたオブジェクト:', {
+              type: userData.type,
+              experienceId: userData.experience?.id,
+              experienceTitle: userData.experience?.title,
+              isCompleted: userData.experience?.completed
+            });
+            
+            if (userData.experience && onExperienceClick) {
+              if (userData.type === 'floating') {
+                console.log('🎈 浮遊ミッションタップ - 詳細表示のみ実行');
+              } else {
+                console.log('⚪ 完了済み球体タップ - 詳細表示実行');
+              }
+              onExperienceClick(userData.experience);            }
+          } else {
+            console.log('❌ タップ対象が見つかりませんでした');
           }
         }
       }
@@ -324,6 +319,12 @@ const handleFloatingMissionClick = useCallback((missionMesh) => {
     // サーバーデータの読み込み待機
     if (serverLoading) {
       console.log('🔄 サーバーサイドビジュアライゼーションデータ読み込み中...');
+      return;
+    }
+    
+    // 🔧 重要な修正: シーンが既に初期化されている場合は再初期化をスキップ
+    if (isInitialized && sceneRef.current) {
+      console.log('🎯 シーンは既に初期化済み - 再初期化をスキップして部分更新のみ実行');
       return;
     }
     
@@ -395,7 +396,24 @@ const handleFloatingMissionClick = useCallback((missionMesh) => {
       console.error('最適化されたシーンの初期化に失敗しました:', error);
       setIsInitialized(false);
     }
-  }, [experiences, visualizationData, serverLoading, useServerData, initializeScene, startAnimation, handleResize, cleanup, onExperienceClick, optimizedClickHandler, optimizedWheelHandler, handleMouseDown, handleMouseUp, handleCameraDrag, handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, [
+    visualizationData, 
+    serverLoading, 
+    useServerData,
+    experiences.length, // 体験の数が変わった時のみ再初期化
+    initializeScene,
+    startAnimation,
+    handleResize,
+    cleanup,
+    optimizedClickHandler,
+    optimizedWheelHandler,
+    handleMouseDown,
+    handleMouseUp,
+    handleCameraDrag,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd
+  ]);
   // レンダリング最適化のためのメモ化された統計情報
   const stats = React.useMemo(() => {
     const completed = experiences.filter(exp => exp.completed).length;
