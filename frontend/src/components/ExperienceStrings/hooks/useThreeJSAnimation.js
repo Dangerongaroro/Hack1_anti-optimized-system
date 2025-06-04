@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import * as THREE from 'three';
 
 // アニメーション関連のロジック
@@ -133,55 +132,7 @@ export const useThreeJSAnimation = () => {
         mesh.material.emissiveIntensity = 0.3 + Math.sin(time * 4 + mesh.userData.index) * 0.2;
       }
     }
-    
-    // トレイル効果は停止（位置固定なので不要）
-    // updateTrailEffect(mesh); // コメントアウト
-  };
-
-  // トレイル効果の更新
-  const updateTrailEffect = (mesh) => {
-    // トレイル効果
-    mesh.userData.trail.push({
-      position: mesh.position.clone(),
-      opacity: 0.6
-    });
-    
-    // トレイルの長さを制限
-    if (mesh.userData.trail.length > 30) {
-      mesh.userData.trail.shift();
-    }
-    
-    // 古いトレイルをクリア
-    if (mesh.userData.trailGroup) {
-      while (mesh.userData.trailGroup.children.length > 0) {
-        const child = mesh.userData.trailGroup.children[0];
-        mesh.userData.trailGroup.remove(child);
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) child.material.dispose();
-      }
-    }
-    
-    // 新しいトレイルを作成
-    mesh.userData.trail.forEach((point, idx) => {
-      if (idx > 0) {
-        const trailGeometry = new THREE.SphereGeometry(
-          0.05 * (idx / mesh.userData.trail.length),
-          8, 
-          8
-        );
-        const trailMaterial = new THREE.MeshBasicMaterial({
-          color: mesh.material.color,
-          transparent: true,
-          opacity: point.opacity * (idx / mesh.userData.trail.length),
-          blending: THREE.AdditiveBlending
-        });
-        const trailSphere = new THREE.Mesh(trailGeometry, trailMaterial);
-        trailSphere.position.copy(point.position);
-        mesh.userData.trailGroup.add(trailSphere);
-      }
-      
-      point.opacity *= 0.98;
-    });
+      // トレイル効果は停止（位置固定なので不要）
   };
 
   // パーティクルのアニメーション（浮遊ミッション位置変更を停止）

@@ -15,10 +15,19 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const mouseRef = useRef(new THREE.Vector2());
   const [isInitialized, setIsInitialized] = useState(false);
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  const isHoverEnabled = useRef(true);
+  const [showInfoModal, setShowInfoModal] = useState(false);  const isHoverEnabled = useRef(true);
   const isDragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
+  
+  // タッチ操作用の状態
+  const touchState = useRef({
+    isTouch: false,
+    isDragging: false,
+    isPinching: false,
+    lastTouch: { x: 0, y: 0 },
+    lastDistance: 0,
+    touches: []
+  });
     // 最適化されたThree.jsシーン管理
   const {
     sceneRef,
@@ -103,21 +112,22 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     );
     cameraRef.current.lookAt(lookAt);
   }, [isInitialized, cameraRef]);
-
   // ドラッグ開始
   const handleMouseDown = useCallback((e) => {
+    if (touchState.current.isTouch) return; // タッチ操作中はマウス操作を無視
     isDragging.current = true;
     lastMouse.current = { x: e.clientX, y: e.clientY };
   }, []);
 
   // ドラッグ終了
   const handleMouseUp = useCallback(() => {
+    if (touchState.current.isTouch) return; // タッチ操作中はマウス操作を無視
     isDragging.current = false;
   }, []);
 
   // ドラッグ中のカメラ移動
   const handleCameraDrag = useCallback((e) => {
-    if (!isDragging.current || !cameraRef.current) return;
+    if (!isDragging.current || !cameraRef.current || touchState.current.isTouch) return;
     const dx = e.clientX - lastMouse.current.x;
     const dy = e.clientY - lastMouse.current.y;
     const panSpeed = 0.01; // 調整可
@@ -128,6 +138,100 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
 
     lastMouse.current = { x: e.clientX, y: e.clientY };
   }, [cameraRef]);
+
+  // タッチ開始ハンドラー
+  const handleTouchStart = useCallback((e) => {
+    e.preventDefault();
+    touchState.current.isTouch = true;
+    
+    if (e.touches.length === 1) {
+      // シングルタッチ - ドラッグ操作
+      touchState.current.isDragging = true;
+      touchState.current.lastTouch = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      };
+    } else if (e.touches.length === 2) {
+      // ダブルタッチ - ピンチズーム操作
+      touchState.current.isPinching = true;
+      touchState.current.isDragging = false;
+      
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchState.current.lastDistance = Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    touchState.current.touches = Array.from(e.touches);
+  }, []);
+
+  // タッチ移動ハンドラー
+  const handleTouchMove = useCallback((e) => {
+    e.preventDefault();
+    
+    if (!cameraRef.current) return;
+    
+    if (e.touches.length === 1 && touchState.current.isDragging) {
+      // シングルタッチドラッグ - カメラの回転/パン
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchState.current.lastTouch.x;
+      const dy = touch.clientY - touchState.current.lastTouch.y;
+      
+      const panSpeed = 0.015; // タッチ用に少し強めに設定
+      
+      cameraRef.current.position.x -= dx * panSpeed;
+      cameraRef.current.position.y += dy * panSpeed;
+      cameraRef.current.lookAt(0, 0, 0);
+      
+      touchState.current.lastTouch = {
+        x: touch.clientX,
+        y: touch.clientY
+      };
+    } else if (e.touches.length === 2 && touchState.current.isPinching) {
+      // ピンチズーム
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (touchState.current.lastDistance > 0) {
+        const delta = distance - touchState.current.lastDistance;
+        const zoomSpeed = 0.01;
+        
+        // ズーム処理（既存のズーム関数と同様の制限）
+        const camera = cameraRef.current;
+        const currentDistance = camera.position.length();
+        const newDistance = Math.max(5, Math.min(50, currentDistance - delta * zoomSpeed));
+        
+        const direction = camera.position.clone().normalize();
+        camera.position.copy(direction.multiplyScalar(newDistance));
+        camera.lookAt(0, 0, 0);
+      }
+      
+      touchState.current.lastDistance = distance;
+    }
+  }, [cameraRef]);
+
+  // タッチ終了ハンドラー
+  const handleTouchEnd = useCallback((e) => {
+    e.preventDefault();
+    
+    if (e.touches.length === 0) {
+      // すべてのタッチが終了
+      touchState.current.isTouch = false;
+      touchState.current.isDragging = false;
+      touchState.current.isPinching = false;
+      touchState.current.lastDistance = 0;
+    } else if (e.touches.length === 1 && touchState.current.isPinching) {
+      // ピンチからシングルタッチへ移行
+      touchState.current.isPinching = false;
+      touchState.current.isDragging = true;
+      touchState.current.lastTouch = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      };
+    }
+    
+    touchState.current.touches = Array.from(e.touches);
+  }, []);
 
   // Canvas初期化とアニメーション開始
   useEffect(() => {
@@ -151,8 +255,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       animationCleanup = startAnimation(stars);
       
       setIsInitialized(true);
-      
-      // イベントリスナーの設定
+        // イベントリスナーの設定
       const resizeHandler = () => handleResize(canvas);
       
       window.addEventListener('resize', resizeHandler);
@@ -164,6 +267,12 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       canvas.addEventListener('mousedown', handleMouseDown);
       canvas.addEventListener('mouseup', handleMouseUp);
       canvas.addEventListener('mouseleave', handleMouseUp);
+      
+      // タッチイベントの設定
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+      canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
       
       // クリーンアップ関数
       return () => {
@@ -185,6 +294,12 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
         canvas.removeEventListener('mouseup', handleMouseUp);
         canvas.removeEventListener('mouseleave', handleMouseUp);
         
+        // タッチイベントの削除
+        canvas.removeEventListener('touchstart', handleTouchStart);
+        canvas.removeEventListener('touchmove', handleTouchMove);
+        canvas.removeEventListener('touchend', handleTouchEnd);
+        canvas.removeEventListener('touchcancel', handleTouchEnd);
+        
         // リソースのクリーンアップ
         cleanup();
       };
@@ -192,7 +307,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       console.error('最適化されたシーンの初期化に失敗しました:', error);
       setIsInitialized(false);
     }
-  }, [experiences, initializeScene, startAnimation, handleResize, cleanup, onExperienceClick, optimizedClickHandler, optimizedMouseMoveHandler, optimizedWheelHandler, handleMouseDown, handleMouseUp, handleCameraDrag]);
+  }, [experiences, initializeScene, startAnimation, handleResize, cleanup, onExperienceClick, optimizedClickHandler, optimizedMouseMoveHandler, optimizedWheelHandler, handleMouseDown, handleMouseUp, handleCameraDrag, handleTouchStart, handleTouchMove, handleTouchEnd, hoveredMeshRef]);
 
   // レンダリング最適化のためのメモ化された統計情報
   const stats = React.useMemo(() => {
@@ -251,11 +366,18 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
           <p className="mb-1">🎯 体験の糸: {stats.completed}本</p>
           <p>💫 浮遊ミッション: {stats.floating}個</p>
           {!isInitialized && <p className="text-yellow-300">🔄 最適化中...</p>}
-        </div>
-        <div className="absolute bottom-4 right-4 text-white/60 text-xs z-10">
-          <p>マウスホイール: ズーム</p>
-          <p>ホバー: 詳細表示</p>
-          <p>クリック: 体験を選択</p>
+        </div>        <div className="absolute bottom-4 right-4 text-white/60 text-xs z-10">
+          <div className="hidden md:block">
+            <p>マウスホイール: ズーム</p>
+            <p>ドラッグ: 視点移動</p>
+            <p>ホバー: 詳細表示</p>
+            <p>クリック: 体験を選択</p>
+          </div>
+          <div className="md:hidden">
+            <p>ピンチ: ズーム</p>
+            <p>ドラッグ: 視点移動</p>
+            <p>タップ: 体験を選択</p>
+          </div>
         </div>
       </div>
       {/* 詳細説明モーダル */}
