@@ -16,6 +16,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
   const mouseRef = useRef(new THREE.Vector2());
   const [isInitialized, setIsInitialized] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const isHoverEnabled = useRef(true);
     // 最適化されたThree.jsシーン管理
   const {
     sceneRef,
@@ -33,7 +34,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
   const { handleWheel, handleMouseMove, handleCanvasClick } = useThreeJSInteraction();
   // 最適化されたマウス移動ハンドラー
   const optimizedMouseMoveHandler = useCallback((e) => {
-    if (!isInitialized) return;
+    if (!isInitialized || !isHoverEnabled.current) return;
     
     // 基本的なマウス移動処理は既存のものを使用
     handleMouseMove(
@@ -54,7 +55,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
   // 最適化されたクリックハンドラー
   const optimizedClickHandler = useCallback((e) => {
     if (!isInitialized) return;
-    
+    isHoverEnabled.current = false;
     handleCanvasClick(
       e, 
       canvasRef, 
@@ -139,7 +140,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
   }, [experiences]);
 
   // ツールチップ表示条件を厳格化
-  const shouldShowTooltip = hoveredExperience && hoveredMeshRef.current &&
+  const shouldShowTooltip = isHoverEnabled.current && hoveredExperience && hoveredMeshRef.current &&
     (hoveredMeshRef.current.userData?.type === 'completed' || hoveredMeshRef.current.userData?.type === 'floating');
 
   return (

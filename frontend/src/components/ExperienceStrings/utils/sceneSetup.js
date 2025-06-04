@@ -103,10 +103,11 @@ export const createCompletedSpheres = (scene, experiences, meshesRef) => {
     const angle = t * Math.PI * 4; // より多くの回転
     const height = (t - 0.5) * 4; // より高い範囲
     
+    // 横向きらせん（x軸方向に伸びる）
     const position = {
-      x: Math.cos(angle) * radius,
-      y: height,
-      z: Math.sin(angle) * radius + (t - 0.5) * 2 // 奥行き効果
+      x: (t - 0.5) * 6, // x方向に奥行きを持たせる
+      y: Math.sin(angle) * radius,
+      z: Math.cos(angle) * radius
     };
     
     // 球体作成

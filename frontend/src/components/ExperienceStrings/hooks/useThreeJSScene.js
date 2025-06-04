@@ -39,7 +39,8 @@ export const useThreeJSScene = (experiences) => {
     
     renderer.setSize(rect.width, rect.height);
     renderer.setClearColor(0x000000, 0);
-    camera.position.z = 5;
+    camera.position.set(0, 0, 5); // 正面から
+    camera.lookAt(0, 0, 0);
     
     // メッシュ配列をクリア
     meshesRef.current = [];

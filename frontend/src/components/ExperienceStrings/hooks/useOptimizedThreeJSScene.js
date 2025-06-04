@@ -56,7 +56,8 @@ export const useOptimizedThreeJSScene = (experiences) => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // DPR制限
     renderer.shadowMap.enabled = false; // シャドウ無効化でパフォーマンス向上
     
-    camera.position.z = 5;
+    camera.position.set(0, 0, 5); // 正面から
+    camera.lookAt(0, 0, 0);
     
     // メッシュ配列をクリア
     meshesRef.current = [];
