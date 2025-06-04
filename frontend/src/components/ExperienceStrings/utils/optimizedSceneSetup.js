@@ -75,19 +75,16 @@ export const createOptimizedCompletedSpheres = (scene, experiences, meshesRef) =
   const positions = optimizedThreeUtils.precomputeSpiralPositions(completedExperiences.length);
   
   completedExperiences.forEach((exp, index) => {
-    // プールからジオメトリを取得
-    const geometry = optimizedThreeUtils.geometryPool.sphere_medium;
+    // 本当の正八面体（detail=0）
+    const t = index / Math.max(completedExperiences.length - 1, 1);
+    const geometry = new THREE.OctahedronGeometry(0.2 + t * 0.1, 0);
     const colorHex = getThemeColor(exp.id, exp.category);
-    
-    // プールからマテリアルを取得
     const material = optimizedThreeUtils.getMaterial('completed_sphere', colorHex);
     const sphere = new THREE.Mesh(geometry, material);
-    
     // 事前計算された位置を適用
     const pos = positions[index];
     sphere.position.set(pos.x, pos.y, pos.z);
     sphere.scale.setScalar(pos.scale);
-    
     sphere.userData = {
       experience: exp,
       type: 'completed',
@@ -97,13 +94,11 @@ export const createOptimizedCompletedSpheres = (scene, experiences, meshesRef) =
       spiralIndex: index,
       depth: pos.z
     };
-    
     // 最適化されたポイントライト
     const light = new THREE.PointLight(new THREE.Color(colorHex), 0.5, 2);
     light.position.copy(sphere.position);
     sphere.userData.light = light;
     scene.add(light);
-    
     scene.add(sphere);
     spheres.push(sphere);
     meshesRef.current.push(sphere);
@@ -120,18 +115,14 @@ export const createOptimizedFloatingMissions = (scene, experiences, meshesRef) =
   const positions = optimizedThreeUtils.precomputeFloatingPositions(incompleteMissions.length);
   
   incompleteMissions.forEach((mission, index) => {
-    // プールからジオメトリを取得
-    const geometry = optimizedThreeUtils.geometryPool.sphere_small;
+    // 本当の正八面体（detail=0）
+    const geometry = new THREE.OctahedronGeometry(0.2, 0);
     const colorHex = getThemeColor(mission.id, mission.category);
-    
-    // プールからマテリアルを取得
     const material = optimizedThreeUtils.getMaterial('floating_mission', colorHex);
     const missionMesh = new THREE.Mesh(geometry, material);
-    
     // 事前計算された位置を適用
     const pos = positions[index];
     missionMesh.position.set(pos.x, pos.y, pos.z);
-    
     missionMesh.userData = {
       experience: mission,
       type: 'floating',
@@ -140,10 +131,8 @@ export const createOptimizedFloatingMissions = (scene, experiences, meshesRef) =
       basePosition: missionMesh.position.clone(),
       positionFixed: true
     };
-    
     scene.add(missionMesh);
     meshesRef.current.push(missionMesh);
-    
     // 最適化されたパーティクル効果（固定位置）
     createOptimizedMissionParticles(scene, missionMesh, colorHex, pos.seed);
   });

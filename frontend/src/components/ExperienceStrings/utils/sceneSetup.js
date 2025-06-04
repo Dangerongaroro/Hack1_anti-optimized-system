@@ -1,6 +1,49 @@
 import * as THREE from 'three';
 import { getThemeColor } from '../../../utils/helpers';
 
+// 背景の星空を作成
+export const createStarField = (scene) => {
+  const starsGeometry = new THREE.BufferGeometry();
+  const starCount = 1000;
+  const positions = new Float32Array(starCount * 3);
+  const colors = new Float32Array(starCount * 3);
+  
+  for (let i = 0; i < starCount; i++) {
+    const i3 = i * 3;
+    // シード値を使った固定ランダム
+    const seed1 = Math.sin(i * 12.9898) * 43758.5453;
+    const seed2 = Math.sin(i * 78.233) * 43758.5453;
+    const seed3 = Math.sin(i * 39.346) * 43758.5453;
+    
+    positions[i3] = (seed1 - Math.floor(seed1) - 0.5) * 50;
+    positions[i3 + 1] = (seed2 - Math.floor(seed2) - 0.5) * 50;
+    positions[i3 + 2] = -20 + (seed3 - Math.floor(seed3)) * 20;
+    
+    const color = new THREE.Color();
+    const hue = (seed1 - Math.floor(seed1)) * 360;
+    color.setHSL(hue, 0.5, 0.5 + (seed2 - Math.floor(seed2)) * 0.5);
+    colors[i3] = color.r;
+    colors[i3 + 1] = color.g;
+    colors[i3 + 2] = color.b;
+  }
+  
+  starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  starsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  
+  const starsMaterial = new THREE.PointsMaterial({
+    size: 0.1,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending
+  });
+  
+  const stars = new THREE.Points(starsGeometry, starsMaterial);
+  scene.add(stars);
+  
+  return stars;
+};
+
 // 照明を設定
 export const setupLighting = (scene) => {
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -24,88 +67,93 @@ const seededRandom = (seed) => {
 // 完了済み体験の球体を作成（奥から手前へのらせん配置）
 export const createCompletedSpheres = (scene, experiences, meshesRef) => {
   const completedExperiences = experiences.filter(exp => exp.completed);
+  console.log('=== createCompletedSpheres デバッグ ===');
+  console.log('完了済み体験数:', completedExperiences.length);
+  console.log('完了済み体験一覧:', completedExperiences);
+  
   const spheres = [];
   
   completedExperiences.forEach((exp, index) => {
-    // ジオメトリの最適化 - セグメント数を減らす
-    // 球のサイズを小さくするため、半径を0.15に変更
-    const geometry = new THREE.SphereGeometry(0.15, 16, 16);
+    console.log(`=== 球体 ${index} 作成開始 ===`);
+    console.log('体験データ:', exp);
+    console.log('データ検証:', {
+      hasTitle: !!exp.title,
+      hasCategory: !!exp.category,
+      hasLevel: exp.level !== undefined,
+      hasId: !!exp.id,
+      hasCompleted: exp.completed !== undefined
+    });
+    
+    // データ検証を強化
+    if (!exp || typeof exp !== 'object') {
+      console.warn('❌ Invalid experience data at index', index, ':', exp);
+      return;
+    }
+    
+    // 安全なタイトルの取得
+    const safeTitle = exp.title || exp.name || `体験 ${index + 1}`;
+    const safeCategory = exp.category || 'その他';
+    const safeLevel = exp.level || 1;
+    
+    console.log('安全なデータ:', { safeTitle, safeCategory, safeLevel });
+    
+    // らせん配置の計算
+    const t = index / Math.max(completedExperiences.length - 1, 1);
+    const radius = 2.5 + t * 1.5;
+    const angle = t * Math.PI * 4; // より多くの回転
+    const height = (t - 0.5) * 4; // より高い範囲
+    
+    const position = {
+      x: Math.cos(angle) * radius,
+      y: height,
+      z: Math.sin(angle) * radius + (t - 0.5) * 2 // 奥行き効果
+    };
+    
+    // 球体作成
+    const geometry = new THREE.OctahedronGeometry(0.2 + t * 0.1, 16, 16);
     const colorHex = getThemeColor(exp.id, exp.category);
     const color = new THREE.Color(colorHex);
     
-    // プロンプトの意図: マットな質感の球体、鏡面反射なし
-    // "soft matte spheres, no specular highlights"
-    // 球体の発光効果をなくすため、emissive関連のプロパティを削除
-    const material = new THREE.MeshStandardMaterial({ 
+    const material = new THREE.MeshStandardMaterial({
       color: color,
       transparent: true,
       opacity: 0.85,
-      metalness: 0.0, // テカリを無くすため、金属感を0に設定
-      roughness: 0.8 // テカリを無くすため、粗さを高く設定
+      metalness: 0.3,
+      roughness: 0.2,
+      emissive: color,
+      emissiveIntensity: 0.1
     });
+    
     const sphere = new THREE.Mesh(geometry, material);
+    sphere.position.set(position.x, position.y, position.z);
     
-    // らせんベースの配置（奥から手前へ） - 固定版
-    const spiralTurns = 2; // らせんの巻数
-    const depthRange = 6; // 奥行きの範囲（奥から手前）
-    const baseRadius = 2; // 基本半径
-    
-    // らせんの角度計算
-    const t = index / Math.max(completedExperiences.length - 1, 1);
-    const angle = t * spiralTurns * Math.PI * 2;
-    
-    // Z座標（奥から手前へ）- 奥が負の値、手前が正の値
-    const depth = -depthRange/2 + t * depthRange; // -3 から +3 へ
-    
-    // 半径の変化（手前に来るほど少し広がる）
-    const radiusVariation = baseRadius + t * 0.8;
-    
-    // 固定ランダムな角度のずれ（±30度）
-    const seed = exp.id || index; // 体験IDをシードとして使用
-    const angleOffset = (seededRandom(seed * 1.234) - 0.5) * Math.PI / 3;
-    const finalAngle = angle + angleOffset;
-    
-    // 位置の計算（X-Y平面で回転、Zで奥行き）
-    sphere.position.x = Math.cos(finalAngle) * radiusVariation;
-    sphere.position.y = Math.sin(finalAngle) * radiusVariation;
-    sphere.position.z = depth;
-    
-    // 固定ランダムな距離のずれ（±20%）
-    const distanceVariation = 0.8 + seededRandom(seed * 2.345) * 0.4;
-    // X-Y方向のみスケール（Z軸は保持）
-    sphere.position.x *= distanceVariation;
-    sphere.position.y *= distanceVariation;
-    
-    // 高さのバリエーション（上下の揺らぎ）
-    const heightOffset = (seededRandom(seed * 3.456) - 0.5) * 1.5;
-    sphere.position.y += heightOffset;
-    
-    // 難易度に応じてサイズを調整
-    // 球のスケールを小さくするため、係数をかける
-    const scaleMultiplier = (0.8 + (exp.level || 1) * 0.2) * 0.7;
-    sphere.scale.setScalar(scaleMultiplier);
-    
-    sphere.userData = { 
-      experience: exp, 
-      type: 'completed',
-      originalScale: scaleMultiplier,
-      // glowColor: color, // グロー効果をなくすため削除
-      seed: seed,
-      spiralIndex: index, // らせん上のインデックス
-      depth: depth // 奥行き情報
+    // userDataに完全かつ安全な体験データを設定
+    const safeExperienceData = {
+      id: exp.id || index + 1,
+      title: safeTitle,
+      category: safeCategory,
+      level: safeLevel,
+      completed: exp.completed !== undefined ? exp.completed : true,
+      date: exp.date || new Date(),
+      type: exp.type || 'general',
+      description: exp.description || `${safeCategory}の体験`,
+      feedback: exp.feedback || null,
+      deviation: exp.deviation || 0
     };
     
-    // グロー効果のためのポイントライトを削除
-    // const light = new THREE.PointLight(color, 0.5, 2);
-    // light.position.copy(sphere.position);
-    // sphere.userData.light = light;
-    // scene.add(light);
+    sphere.userData = {
+      type: 'completed',
+      experience: safeExperienceData  // 安全で完全な体験データ
+    };
+    
+    console.log(`✅ 球体 ${index} のuserData設定完了:`, sphere.userData.experience);
     
     scene.add(sphere);
     spheres.push(sphere);
     meshesRef.current.push(sphere);
   });
   
+  console.log(`🎯 合計 ${spheres.length} 個の球体を作成完了`);
   return spheres;
 };
 
@@ -114,20 +162,17 @@ export const createFloatingMissions = (scene, experiences, meshesRef) => {
   const incompleteMissions = experiences.filter(exp => !exp.completed);
   
   incompleteMissions.forEach((mission, index) => {
-    // ジオメトリの最適化 - セグメント数を減らす
-    // 球のサイズを小さくするため、半径を0.15に変更
-    const geometry = new THREE.SphereGeometry(0.15, 24, 24);
+    const geometry = new THREE.OctahedronGeometry(0.2, 24, 24);
     const colorHex = getThemeColor(mission.id, mission.category);
     
-    // プロンプトの意図: マットな質感の球体、鏡面反射なし
-    // "soft matte spheres, no specular highlights"
-    // 球体の発光効果をなくすため、emissive関連のプロパティを削除
     const material = new THREE.MeshStandardMaterial({ 
-      color: new THREE.Color(0x000000),
+      color: new THREE.Color(colorHex),
       transparent: true,
       opacity: 0.85,
-      metalness: 0.0, // テカリを無くすため、金属感を0に設定
-      roughness: 0.8 // テカリを無くすため、粗さを高く設定
+      metalness: 0.05,
+      roughness: 0.2,
+      emissive: new THREE.Color(colorHex).multiplyScalar(0.15),
+      emissiveIntensity: 0.3
     });
     const missionMesh = new THREE.Mesh(geometry, material);
     
@@ -156,38 +201,38 @@ export const createFloatingMissions = (scene, experiences, meshesRef) => {
     scene.add(missionMesh);
     meshesRef.current.push(missionMesh);
     
-    // トレイル効果と周囲のパーティクル効果を削除
-    // const trailGroup = new THREE.Group();
-    // missionMesh.userData.trail = [];
-    // missionMesh.userData.trailGroup = trailGroup;
-    // scene.add(trailGroup);
+    // トレイル効果用の初期化
+    const trailGroup = new THREE.Group();
+    missionMesh.userData.trail = [];
+    missionMesh.userData.trailGroup = trailGroup;
+    scene.add(trailGroup);
     
-    // 周囲のパーティクル効果（固定位置）を削除
-    // const particleGeometry = new THREE.SphereGeometry(0.02, 8, 8);
-    // const particleMaterial = new THREE.MeshBasicMaterial({
-    //   color: new THREE.Color(colorHex),
-    //   transparent: true,
-    //   opacity: 0.4
-    // });
+    // 周囲のパーティクル効果（固定位置）
+    const particleGeometry = new THREE.OctahedronGeometry(0.02, 8, 8);
+    const particleMaterial = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(colorHex),
+      transparent: true,
+      opacity: 0.4
+    });
     
-    // for (let p = 0; p < 5; p++) {
-    //   const particle = new THREE.Mesh(particleGeometry, particleMaterial);
-    //   particle.position.copy(missionMesh.position);
+    for (let p = 0; p < 5; p++) {
+      const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+      particle.position.copy(missionMesh.position);
       
-    //   // 固定されたオフセット
-    //   const offsetX = seededRandom(seed * 5.678 + p) * 0.8 - 0.4;
-    //   const offsetY = seededRandom(seed * 6.789 + p) * 0.8 - 0.4;
-    //   const offsetZ = seededRandom(seed * 7.890 + p) * 0.8 - 0.4;
+      // 固定されたオフセット
+      const offsetX = seededRandom(seed * 5.678 + p) * 0.8 - 0.4;
+      const offsetY = seededRandom(seed * 6.789 + p) * 0.8 - 0.4;
+      const offsetZ = seededRandom(seed * 7.890 + p) * 0.8 - 0.4;
       
-    //   particle.position.add(new THREE.Vector3(offsetX, offsetY, offsetZ));
+      particle.position.add(new THREE.Vector3(offsetX, offsetY, offsetZ));
       
-    //   particle.userData = { 
-    //     parentMission: missionMesh, 
-    //     offset: new THREE.Vector3(offsetX, offsetY, offsetZ),
-    //     speed: 0.001 + seededRandom(seed * 8.901 + p) * 0.002,
-    //     isParticle: true // パーティクル識別用
-    //   };
-    //   scene.add(particle);
-    // }
+      particle.userData = { 
+        parentMission: missionMesh, 
+        offset: new THREE.Vector3(offsetX, offsetY, offsetZ),
+        speed: 0.001 + seededRandom(seed * 8.901 + p) * 0.002,
+        isParticle: true // パーティクル識別用
+      };
+      scene.add(particle);
+    }
   });
 };

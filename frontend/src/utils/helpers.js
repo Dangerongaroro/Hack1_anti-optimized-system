@@ -80,63 +80,57 @@ export const generateChallengeLocal = (level) => {
   return challenge;
 };
 
-const idToColor = (id) => {
-  let hash = 0;
-  const strId = String(id);
-  for (let i = 0; i < strId.length; i++) {
-    hash = strId.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  
-  // より美しいパステル調の色相範囲に制限
-  // より多様な色相範囲に拡張
-  const colorRanges = [
-    { min: 0, max: 30 },   // 赤〜オレンジ系
-    { min: 30, max: 60 },  // オレンジ〜黄系
-    { min: 60, max: 90 },  // 黄〜黄緑系
-    { min: 90, max: 120 }, // 黄緑〜緑系
-    { min: 120, max: 150 },// 緑〜青緑系
-    { min: 150, max: 180 },// 青緑〜シアン系
-    { min: 180, max: 210 },// シアン〜青系
-    { min: 210, max: 240 },// 青〜青紫系
-    { min: 240, max: 270 },// 青紫〜紫系
-    { min: 270, max: 300 },// 紫〜マゼンタ系
-    { min: 300, max: 330 },// マゼンタ〜ピンク系
-    { min: 330, max: 360 } // ピンク〜赤系
-  ];
-  
-  // ハッシュ値から色相範囲を選択
-  const rangeIndex = Math.abs(hash) % colorRanges.length;
-  const selectedRange = colorRanges[rangeIndex];
-  
-  // 選択された範囲内で色相を決定
-  const hue = Math.abs(hash * 137.508) % (selectedRange.max - selectedRange.min) + selectedRange.min;
-  
-  // さらにカラフルにするため、彩度と明度を調整
-  // もっと色鮮やかにするため、彩度と明度を調整
-  const saturation = Math.round(80 + (Math.abs(hash) % 20)); // 80-100%（さらに鮮やかに）
-  const lightness = Math.round(40 + (Math.abs(hash) % 40));  // 40-80%（鮮やかさを保ちつつ多様な明るさ）
-  
-  return `hsl(${Math.round(hue)}, ${saturation}%, ${lightness}%)`;
-};
-
 // テーマカラー取得関数
-export const getThemeColor = (id, category = null) => {
-  // より美しいパステル調のカテゴリーカラー
-  const categoryColors = {
-    "ライフスタイル": "#6EE7B7",    // 淡い緑
-    "アート・創作": "#C4B5FD",     // 淡い紫
-    "料理・グルメ": "#FDE68A",     // 淡い黄色
-    "ソーシャル": "#F9A8D4",       // 淡いピンク
-    "学習・読書": "#93C5FD",       // 淡い青
-    "自然・アウトドア": "#86EFAC",  // 淡いグリーン
-    "エンタメ": "#FDBA74"          // 淡いオレンジ
+export function getThemeColor(id, category) {
+  // feature_masahiro2の色設計に合わせる
+  const categoryMap = {
+    'ライフスタイル': 30,
+    'アート・創作': 280,
+    '料理・グルメ': 50,
+    'ソーシャル': 330,
+    '学習・読書': 210,
+    '自然・アウトドア': 120,
+    'スポーツ・運動': 170,
+    'エンタメ': 0,
+    'その他': 200
   };
+  const normalized = normalizeCategory(category);
+  let hue;
+  if (normalized && categoryMap[normalized]) {
+    hue = categoryMap[normalized];
+  } else {
+    hue = (typeof id === 'number' ? id * 47 : (id ? id.toString().length * 47 : 0)) % 360;
+  }
+  // feature_masahiro2の色味に近いパステル
+  return `hsl(${hue}, 70%, 75%)`;
+}
+
+// 有効なカテゴリーのリスト
+export const VALID_CATEGORIES = [
+  'ライフスタイル',
+  'アート・創作',
+  '料理・グルメ',
+  'ソーシャル',
+  '学習・読書',
+  '自然・アウトドア',
+  'スポーツ・運動',
+  'エンタメ',
+  'その他'
+];
+
+// カテゴリーの検証と正規化
+export const normalizeCategory = (category) => {
+  if (!category) return 'その他';
   
-  // カテゴリーが指定されていて、マッピングが存在する場合はそれを使用
-  if (category && categoryColors[category]) {
-    return categoryColors[category];
+  // 完全一致
+  if (VALID_CATEGORIES.includes(category)) {
+    return category;
   }
   
-  // それ以外はIDベースの色を生成
-  return idToColor(id);
+  // 部分一致の試行
+  const normalized = VALID_CATEGORIES.find(valid => 
+    valid.includes(category) || category.includes(valid)
+  );
+  
+  return normalized || 'その他';
 };

@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { TrendingUp, Calendar, Sparkles, CheckCircle2, Star, Plus, Edit3 } from 'lucide-react';
-import ExperienceStrings from '../components/ExperienceStrings';
+import React, { useEffect, useState } from 'react';
+import { TrendingUp, Calendar, Sparkles, CheckCircle2, Star, Plus, Edit3, Info } from 'lucide-react';
+import OptimizedExperienceStrings from '../components/ExperienceStrings/OptimizedExperienceStrings';
 
 const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExperienceClick, onClearMission, onNavigateToJournalEntry }) => {
   const safeExperiences = Array.isArray(experiences) ? experiences : [];
@@ -22,6 +22,8 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
   const actualTotalExperiences = safeExperiences.length;
   const actualCompletedExperiences = safeExperiences.filter(e => e && e.completed).length;
   const actualCurrentStreak = safeUserStats.currentStreak;
+
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -55,10 +57,23 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
 
         {/* 体験表示部分 */}
         <div className="pt-24 lg:pt-28 pb-8">
-          <ExperienceStrings 
+          <OptimizedExperienceStrings 
             experiences={safeExperiences} 
             onExperienceClick={onExperienceClick} 
           />
+          {/* canvas直下に説明パネルを配置 */}
+          <div className="mt-8 mb-4 max-w-xl mx-auto">
+            <div className="bg-white shadow-lg rounded-2xl p-4 flex items-center">
+              <h3 className="text-lg font-semibold text-blue-900 mr-2">体験の糸について</h3>
+              <button
+                onClick={() => setShowInfoModal(true)}
+                className="p-1 rounded-full bg-transparent hover:bg-blue-100 transition-colors"
+                aria-label="体験の糸についての情報"
+              >
+                <Info className="w-5 h-5 text-blue-700" />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* 統計表示 - 改良版 */}
@@ -173,6 +188,22 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
           </button>
         </div>
       </div>
+      {/* 詳細説明モーダル */}
+      {showInfoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl relative">
+            <h3 className="text-xl font-bold text-blue-900 mb-4">体験の糸について</h3>
+            <p className="text-gray-700 leading-relaxed mb-4">
+              完了した体験は美しい球体として表示され、それらを繋ぐ糸が成長の軌跡を表現します。<br />
+              各体験には固有の色があり、カテゴリーやテーマによって美しいグラデーションを作り出します。<br />
+              ホバーやクリックで詳細な情報を確認できます。
+            </p>
+            <button onClick={() => setShowInfoModal(false)} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

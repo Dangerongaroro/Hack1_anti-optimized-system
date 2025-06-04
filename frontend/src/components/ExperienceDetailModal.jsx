@@ -3,7 +3,10 @@ import { X, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
 
 // 体験詳細モーダル
 const ExperienceDetailModal = ({ experience, onClose, onFeedback, onClearMission }) => {
-  if (!experience) return null;
+  // デバッグコードを削除してクリーンアップ
+  if (!experience) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -31,11 +34,19 @@ const ExperienceDetailModal = ({ experience, onClose, onFeedback, onClearMission
           </div>
           
           <p className="text-gray-600">
-            {experience.date.toLocaleDateString('ja-JP', { 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+            {experience.date ? (
+              experience.date instanceof Date ? 
+                experience.date.toLocaleDateString('ja-JP', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                }) :
+                new Date(experience.date).toLocaleDateString('ja-JP', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })
+            ) : '日付不明'}
           </p>
           
           {!experience.completed && (

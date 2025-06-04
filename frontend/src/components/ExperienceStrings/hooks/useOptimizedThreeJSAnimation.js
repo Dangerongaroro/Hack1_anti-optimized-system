@@ -21,7 +21,22 @@ export const useOptimizedThreeJSAnimation = () => {
   const animateOptimizedSpheres = (meshesRef, hoveredMeshRef, currentTime) => {
     const timeSeconds = currentTime * 0.001;
     
-    meshesRef.current.forEach((mesh, index) => {
+    // 追加: hoveredMeshRef.currentがnullなら全メッシュを通常状態に戻す
+    if (!hoveredMeshRef.current) {
+      meshesRef.current.forEach((mesh) => {
+        if (mesh.userData.type === 'completed' || mesh.userData.type === 'floating') {
+          // 通常のスケール
+          const baseScale = mesh.userData.originalScale || 1;
+          mesh.scale.setScalar(baseScale);
+          // 通常の発光
+          if (mesh.material && mesh.material.emissiveIntensity !== undefined) {
+            mesh.material.emissiveIntensity = 0.3;
+          }
+        }
+      });
+    }
+    
+    meshesRef.current.forEach((mesh) => {
       if (mesh.userData.type === 'completed') {
         const baseScale = mesh.userData.originalScale || 1;
         
@@ -43,14 +58,14 @@ export const useOptimizedThreeJSAnimation = () => {
           }
         } else {
           // 通常のパルス（最適化版）
-          const pulseScale = baseScale * (1 + Math.sin(timeSeconds * 2 + index * 0.5) * 0.05);
+          const pulseScale = baseScale * (1 + Math.sin(timeSeconds * 2) * 0.05);
           mesh.scale.setScalar(pulseScale);
           
           // 発光の最適化
-          const emissiveIntensity = 0.3 + Math.sin(timeSeconds * 3 + index) * 0.1;
+          const emissiveIntensity = 0.3 + Math.sin(timeSeconds * 3) * 0.1;
           mesh.material.emissiveIntensity = emissiveIntensity;
           if (mesh.userData.light) {
-            mesh.userData.light.intensity = 0.5 + Math.sin(timeSeconds * 3 + index) * 0.1;
+            mesh.userData.light.intensity = 0.5 + Math.sin(timeSeconds * 3) * 0.1;
           }
         }
       } else if (mesh.userData.type === 'floating') {
