@@ -1,6 +1,12 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useOptimizedThreeJSScene } from './hooks/useOptimizedThreeJSScene';
+import { useServerVisualization } from './hooks/useServerVisualization';
+import { 
+  // 既存のインポート
+  animateAttachFloatingMission,
+  convertMissionToCompletedSphere  // 追加
+} from './utils/optimizedSceneSetup';
 
 /**
  * 最適化されたExperienceStringsコンポーネント（ホバー機能なし）
@@ -13,6 +19,9 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
   const [isInitialized, setIsInitialized] = useState(false);
   const isDragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
+
+  // サーバーサイドビジュアライゼーションフック
+  const { visualizationData, isLoading: serverLoading, useServerData } = useServerVisualization(experiences);
 
   // タッチ操作用の状態
   const touchState = useRef({
@@ -35,8 +44,48 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     startAnimation,
     handleResize,
     cleanup,
-    getInteractableMeshes
+    getInteractableMeshes,
+    sceneRef  // 追加: シーン参照
   } = useOptimizedThreeJSScene(experiences);  // 最適化されたクリックハンドラー
+  // 新しい関数：浮遊ミッション達成処理
+const handleFloatingMissionClick = useCallback((missionMesh) => {
+  // 最も近い完了済み球体を見つける
+  const completedSpheres = getInteractableMeshes().filter(mesh => mesh.userData.type === 'completed');
+  if (completedSpheres.length === 0) {
+    // 完了済み球体がない場合は、中心位置をターゲットにする
+    const targetPosition = { x: 0, y: 0, z: 0 };
+    
+    // アニメーション開始
+    animateAttachFloatingMission(
+      sceneRef.current, 
+      missionMesh, 
+      { position: targetPosition }, 
+      () => {
+        // アニメーション完了後に状態更新
+        if (onExperienceClick) {
+          onExperienceClick(missionMesh.userData.experience);
+        }
+      }
+    );
+    return;
+  }
+  
+  // 最後の完了済み球体をターゲットにする
+  const targetMesh = completedSpheres[completedSpheres.length - 1];
+  
+  // アニメーション開始
+  animateAttachFloatingMission(
+    sceneRef.current, 
+    missionMesh, 
+    targetMesh, 
+    () => {
+      // アニメーション完了後に状態更新
+      if (onExperienceClick) {
+        onExperienceClick(missionMesh.userData.experience);
+      }
+    }
+  );
+}, [onExperienceClick, getInteractableMeshes, sceneRef]);
   const optimizedClickHandler = useCallback((e) => {
     if (!isInitialized || !canvasRef.current) return;
     
@@ -54,12 +103,16 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       
       if (intersects.length > 0) {
         const clickedObject = intersects[0].object;
-        if (clickedObject.userData.experience && onExperienceClick) {
+        
+        // 浮遊ミッションがクリックされた場合
+        if (clickedObject.userData.type === 'floating') {
+          handleFloatingMissionClick(clickedObject);
+        } else if (clickedObject.userData.experience && onExperienceClick) {
           onExperienceClick(clickedObject.userData.experience);
         }
       }
     }
-  }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef]);
+  }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef, handleFloatingMissionClick]);
 
   // 最適化されたホイールハンドラー
   const optimizedWheelHandler = useCallback((e) => {
@@ -264,22 +317,35 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     }
     
     touchState.current.touches = Array.from(e.touches);
-  }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef]);
-  // Canvas初期化とアニメーション開始
+  }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef]);  // Canvas初期化とアニメーション開始
   useEffect(() => {
     if (!canvasRef.current || experiences.length === 0) return;
+    
+    // サーバーデータの読み込み待機
+    if (serverLoading) {
+      console.log('🔄 サーバーサイドビジュアライゼーションデータ読み込み中...');
+      return;
+    }
     
     const canvas = canvasRef.current;
     let animationCleanup = null;
 
     try {
-      // シーン初期化
-      const { stars } = initializeScene(canvas);
+      // サーバーデータの使用状況をログ出力
+      if (useServerData && visualizationData) {
+        console.log('🖥️ サーバーサイドビジュアライゼーションデータを使用:', visualizationData);
+      } else {
+        console.log('💻 フロントエンド計算でビジュアライゼーションを実行');
+      }
+      
+      // シーン初期化（サーバーデータまたはフロントエンド計算）
+      const { stars } = initializeScene(canvas, visualizationData);
       
       // アニメーション開始
       animationCleanup = startAnimation(stars);
       
       setIsInitialized(true);
+      console.log('✅ 3Dビジュアライゼーションが正常に初期化されました');
 
       // イベントリスナーの設定
       const resizeHandler = () => handleResize(canvas);
@@ -329,7 +395,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       console.error('最適化されたシーンの初期化に失敗しました:', error);
       setIsInitialized(false);
     }
-  }, [experiences, initializeScene, startAnimation, handleResize, cleanup, onExperienceClick, optimizedClickHandler, optimizedWheelHandler, handleMouseDown, handleMouseUp, handleCameraDrag, handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, [experiences, visualizationData, serverLoading, useServerData, initializeScene, startAnimation, handleResize, cleanup, onExperienceClick, optimizedClickHandler, optimizedWheelHandler, handleMouseDown, handleMouseUp, handleCameraDrag, handleTouchStart, handleTouchMove, handleTouchEnd]);
   // レンダリング最適化のためのメモ化された統計情報
   const stats = React.useMemo(() => {
     const completed = experiences.filter(exp => exp.completed).length;
@@ -348,11 +414,15 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
           style={{ background: '#000' }}
         />
 
-        {/* 統計や操作説明 */}
-        <div className="absolute bottom-4 left-4 text-white/80 text-sm z-10">
+        {/* 統計や操作説明 */}        <div className="absolute bottom-4 left-4 text-white/80 text-sm z-10">
           <p className="mb-1">🎯 体験の糸: {stats.completed}本</p>
           <p>💫 浮遊ミッション: {stats.floating}個</p>
           {!isInitialized && <p className="text-yellow-300">🔄 最適化中...</p>}
+          {visualizationData && (
+            <p className={`mt-1 ${visualizationData.isServerData ? 'text-green-300' : 'text-orange-300'}`}>
+              {visualizationData.isServerData ? '🔧 サーバー計算使用中' : '💻 フロントエンド計算使用中'}
+            </p>
+          )}
         </div>
 
         <div className="absolute bottom-4 right-4 text-white/60 text-xs z-10">

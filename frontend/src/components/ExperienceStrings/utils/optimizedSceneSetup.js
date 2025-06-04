@@ -88,8 +88,10 @@ const createStarTexture = () => {
   
   context.fillStyle = gradient;
   context.fillRect(0, 0, 32, 32);
-  
-  const texture = new THREE.CanvasTexture(canvas);
+    const texture = new THREE.CanvasTexture(canvas);
+  // 3Dテクスチャ関連の警告を防止
+  texture.flipY = false;
+  texture.premultiplyAlpha = false;
   return texture;
 };
 
@@ -306,15 +308,12 @@ const createOptimizedThreadParticles = (scene, curveData, startSphere, endSphere
       new THREE.Color(getThemeColor(endSphere.userData.experience.id)),
       t
     );
-    
-    // 強化された発光パーティクル
+      // 強化された発光パーティクル
     const enhancedParticleMaterial = new THREE.MeshBasicMaterial({
       color: particleColor,
       transparent: true,
       opacity: 0.9,
-      blending: THREE.AdditiveBlending,
-      emissive: particleColor,
-      emissiveIntensity: 0.5
+      blending: THREE.AdditiveBlending
     });
     
     const particle = new THREE.Mesh(particleGeometry, enhancedParticleMaterial);
@@ -341,3 +340,79 @@ const createOptimizedThreadParticles = (scene, curveData, startSphere, endSphere
 export const disposeOptimizedScene = () => {
   optimizedThreeUtils.dispose();
 };
+
+// convertMissionToCompletedSphere関数をexportとして追加
+export function convertMissionToCompletedSphere(scene, missionMesh, targetMesh) {
+  try {
+    // ミッションのマテリアルを完了済み球体のマテリアルに変更
+    const experience = missionMesh.userData.experience;
+    if (!experience) {
+      console.warn('⚠️ ミッション体験データが見つかりません');
+      return;
+    }
+
+    const colorHex = getThemeColor(experience.id, experience.category);
+    const completedMaterial = optimizedThreeUtils.getMaterial('completed_sphere', colorHex);
+    
+    // マテリアルを変更
+    if (missionMesh.material && !missionMesh.userData?.isPooled) {
+      missionMesh.material.dispose(); // 古いマテリアルを解放
+    }
+    missionMesh.material = completedMaterial;
+    
+    // userDataを更新
+    missionMesh.userData.type = 'completed';
+    missionMesh.userData.experience.completed = true;
+    
+    // ライトの色も更新
+    if (missionMesh.userData.light) {
+      missionMesh.userData.light.color.setHex(colorHex);
+      missionMesh.userData.light.intensity = 0.8; // 完了済みのライト強度
+    }
+    
+    // 完了済み球体のスケールに調整
+    missionMesh.scale.setScalar(1.0);
+    
+    console.log('✅ ミッションを完了済み球体に変換しました:', experience.title);
+  } catch (error) {
+    console.error('❌ ミッション変換中にエラーが発生しました:', error);
+  }
+}
+
+export function animateAttachFloatingMission(scene, missionMesh, targetMesh, onComplete) {
+  const duration = 400; // ms
+  const start = { ...missionMesh.position };
+  const end = { ...targetMesh.position };
+  const startTime = performance.now();
+
+  function animate(now) {
+    const t = Math.min((now - startTime) / duration, 1);
+    // 線形補間
+    missionMesh.position.x = start.x + (end.x - start.x) * t;
+    missionMesh.position.y = start.y + (end.y - start.y) * t;
+    missionMesh.position.z = start.z + (end.z - start.z) * t;
+
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      // クリーンアップ（パーティクルやライトのみ）
+      if (missionMesh.userData.trailGroup) {
+        scene.remove(missionMesh.userData.trailGroup);
+        missionMesh.userData.trailGroup.traverse(child => {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) child.material.dispose();
+        });
+        missionMesh.userData.trailGroup = null;
+      }
+      
+      // ミッションメッシュを削除せず、完了済み球体として変換
+      convertMissionToCompletedSphere(scene, missionMesh, targetMesh);
+      
+      // 状態更新を少し遅延させる（変換完了後に実行）
+      setTimeout(() => {
+        if (typeof onComplete === 'function') onComplete();
+      }, 50); // 50ms遅延
+    }
+  }
+  requestAnimationFrame(animate);
+}

@@ -184,8 +184,6 @@ class OptimizedThreeUtils {
             transparent: true,
             opacity: 0.9,
             blending: THREE.AdditiveBlending,
-            emissive: new THREE.Color(color),
-            emissiveIntensity: 0.5,
             ...options
           });
           break;
