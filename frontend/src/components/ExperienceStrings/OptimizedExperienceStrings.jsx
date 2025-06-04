@@ -17,6 +17,8 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
   const [isInitialized, setIsInitialized] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const isHoverEnabled = useRef(true);
+  const isDragging = useRef(false);
+  const lastMouse = useRef({ x: 0, y: 0 });
     // 最適化されたThree.jsシーン管理
   const {
     sceneRef,
@@ -71,9 +73,61 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
 
   // 最適化されたホイールハンドラー
   const optimizedWheelHandler = useCallback((e) => {
-    if (!isInitialized) return;
-    handleWheel(e, cameraRef);
-  }, [isInitialized, handleWheel, cameraRef]);
+    if (!isInitialized || !cameraRef.current) return;
+    e.preventDefault();
+
+    // カメラの向き（視線ベクトル）を取得
+    const cameraDirection = new THREE.Vector3();
+    cameraRef.current.getWorldDirection(cameraDirection);
+
+    // 原点を常にlookAtしている場合
+    const lookAt = new THREE.Vector3(0, 0, 0);
+
+    // スクロール量
+    const delta = e.deltaY * 0.05; // 拡大/縮小の速度
+
+    // 現在の距離
+    const dist = cameraRef.current.position.distanceTo(lookAt);
+
+    // 距離制限
+    const minDist = 2;
+    const maxDist = 30;
+    let newDist = dist + delta;
+    newDist = Math.max(minDist, Math.min(maxDist, newDist));
+
+    // 新しい位置 = lookAt + (direction * newDist)
+    cameraRef.current.position.copy(
+      lookAt.clone().add(
+        cameraDirection.multiplyScalar(-newDist) // -方向に進む（カメラの向きは逆）
+      )
+    );
+    cameraRef.current.lookAt(lookAt);
+  }, [isInitialized, cameraRef]);
+
+  // ドラッグ開始
+  const handleMouseDown = useCallback((e) => {
+    isDragging.current = true;
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  // ドラッグ終了
+  const handleMouseUp = useCallback(() => {
+    isDragging.current = false;
+  }, []);
+
+  // ドラッグ中のカメラ移動
+  const handleCameraDrag = useCallback((e) => {
+    if (!isDragging.current || !cameraRef.current) return;
+    const dx = e.clientX - lastMouse.current.x;
+    const dy = e.clientY - lastMouse.current.y;
+    const panSpeed = 0.01; // 調整可
+
+    cameraRef.current.position.x -= dx * panSpeed;
+    cameraRef.current.position.y += dy * panSpeed;
+    cameraRef.current.lookAt(0, 0, 0);
+
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+  }, [cameraRef]);
 
   // Canvas初期化とアニメーション開始
   useEffect(() => {
@@ -104,8 +158,12 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       window.addEventListener('resize', resizeHandler);
       canvas.addEventListener('wheel', optimizedWheelHandler, { passive: false });
       canvas.addEventListener('mousemove', optimizedMouseMoveHandler);
+      canvas.addEventListener('mousemove', handleCameraDrag);
       canvas.addEventListener('click', optimizedClickHandler);
       canvas.addEventListener('mouseleave', clearHover);
+      canvas.addEventListener('mousedown', handleMouseDown);
+      canvas.addEventListener('mouseup', handleMouseUp);
+      canvas.addEventListener('mouseleave', handleMouseUp);
       
       // クリーンアップ関数
       return () => {
@@ -120,8 +178,12 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
         window.removeEventListener('resize', resizeHandler);
         canvas.removeEventListener('wheel', optimizedWheelHandler);
         canvas.removeEventListener('mousemove', optimizedMouseMoveHandler);
+        canvas.removeEventListener('mousemove', handleCameraDrag);
         canvas.removeEventListener('click', optimizedClickHandler);
         canvas.removeEventListener('mouseleave', clearHover);
+        canvas.removeEventListener('mousedown', handleMouseDown);
+        canvas.removeEventListener('mouseup', handleMouseUp);
+        canvas.removeEventListener('mouseleave', handleMouseUp);
         
         // リソースのクリーンアップ
         cleanup();
@@ -130,7 +192,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       console.error('最適化されたシーンの初期化に失敗しました:', error);
       setIsInitialized(false);
     }
-  }, [experiences, initializeScene, startAnimation, handleResize, cleanup, onExperienceClick, optimizedClickHandler, optimizedMouseMoveHandler, optimizedWheelHandler]);
+  }, [experiences, initializeScene, startAnimation, handleResize, cleanup, onExperienceClick, optimizedClickHandler, optimizedMouseMoveHandler, optimizedWheelHandler, handleMouseDown, handleMouseUp, handleCameraDrag]);
 
   // レンダリング最適化のためのメモ化された統計情報
   const stats = React.useMemo(() => {
