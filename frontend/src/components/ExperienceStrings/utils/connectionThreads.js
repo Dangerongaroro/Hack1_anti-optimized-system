@@ -36,6 +36,8 @@ export const createConnectionThreads = (scene, spheres) => {
     const segments = 30;
     const points = curve.getPoints(segments);
     
+    console.log('球体', i, 'color:', spheres[i].material.color.getStyle());
+    
     for (let j = 0; j < points.length - 1; j++) {
       const currentPoint = points[j];
       const nextPoint = points[j + 1];
@@ -54,20 +56,12 @@ export const createConnectionThreads = (scene, spheres) => {
         1
       );
       
-      // 色のグラデーション
-      const t = j / (points.length - 1);
-      const segmentColor = new THREE.Color().lerpColors(
-        new THREE.Color(getThemeColor(spheres[i].userData.experience.id)),
-        new THREE.Color(getThemeColor(spheres[i + 1].userData.experience.id)),
-        t
-      );
-      
-      const cylinderMaterial = new THREE.MeshPhongMaterial({
+      // 球体のmaterialを参照
+      const segmentColor = spheres[i].material.color.clone();
+      const cylinderMaterial = new THREE.MeshBasicMaterial({
         color: segmentColor,
-        transparent: true,
-        opacity: 0.8,
-        emissive: segmentColor,
-        emissiveIntensity: 0.2
+        transparent: false,
+        opacity: 1.0
       });
       
       const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);

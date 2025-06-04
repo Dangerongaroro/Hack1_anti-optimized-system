@@ -206,14 +206,13 @@ const createOptimizedThreadSegments = (scene, curveData, startSphere, endSphere)
     
     // 色のグラデーション
     const t = j / (points.length - 1);
-    const segmentColor = new THREE.Color().lerpColors(
-      new THREE.Color(getThemeColor(startSphere.userData.experience.id)),
-      new THREE.Color(getThemeColor(endSphere.userData.experience.id)),
-      t
-    );
+    const startColor = startSphere.material.color;
+    const endColor = endSphere.material.color;
+    const segmentColor = new THREE.Color().lerpColors(startColor, endColor, t);
+    const colorString = `#${segmentColor.getHexString()}`;
+    const cylinderMaterial = optimizedThreeUtils.getMaterial('thread', colorString);
     
     // プールからマテリアルを取得
-    const cylinderMaterial = optimizedThreeUtils.getMaterial('thread', segmentColor);
     const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
     
     // スケールで長さを調整
