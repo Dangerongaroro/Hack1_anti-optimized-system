@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TrendingUp, Calendar, Sparkles, CheckCircle2, Star, Plus, Edit3, Info } from 'lucide-react';
 import OptimizedExperienceStrings from '../components/ExperienceStrings/OptimizedExperienceStrings';
 
@@ -22,45 +22,11 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
   const actualTotalExperiences = safeExperiences.length;
   const actualCompletedExperiences = safeExperiences.filter(e => e && e.completed).length;
   const actualCurrentStreak = safeUserStats.currentStreak;
-
   const [showInfoPanel, setShowInfoPanel] = useState(false);
-
-  const isDragging = useRef(false);
-  const lastTouch = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  const handleTouchStart = (e) => {
-    if (e.touches.length === 1) {
-      isDragging.current = true;
-      lastTouch.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY
-      };
-    }
-  };
-
-  const handleTouchMove = (e) => {
-    if (!isDragging.current || !cameraRef.current || e.touches.length !== 1) return;
-    const dx = e.touches[0].clientX - lastTouch.current.x;
-    const dy = e.touches[0].clientY - lastTouch.current.y;
-    const panSpeed = 0.01; // 調整可
-
-    cameraRef.current.position.x -= dx * panSpeed;
-    cameraRef.current.position.y += dy * panSpeed;
-    cameraRef.current.lookAt(0, 0, 0);
-
-    lastTouch.current = {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY
-    };
-  };
-
-  const handleTouchEnd = () => {
-    isDragging.current = false;
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 w-full mx-auto overflow-hidden"> {/* overflow-x-hidden を overflow-hidden に変更 */}
