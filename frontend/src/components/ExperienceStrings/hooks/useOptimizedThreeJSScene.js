@@ -64,13 +64,12 @@ export const useOptimizedThreeJSScene = (experiences) => {
     
     // 既存シーンの最適化クリーンアップ
     cleanupOptimizedScene(scene);
-    
-    // 最適化されたシーン要素を作成
+      // 最適化されたシーン要素を作成
     const stars = createOptimizedStarField(scene);
     setupOptimizedLighting(scene);
     const spheres = createOptimizedCompletedSpheres(scene, experiences, meshesRef);
     createOptimizedConnectionThreads(scene, spheres);
-    createOptimizedFloatingMissions(scene, experiences, meshesRef);
+    createOptimizedFloatingMissions(scene, experiences, meshesRef, spheres);
     
     return { scene, camera, renderer, stars };
   };
