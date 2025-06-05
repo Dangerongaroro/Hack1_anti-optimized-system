@@ -29,8 +29,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     tapStartTime: 0,
     tapStartPos: { x: 0, y: 0 },
     isTap: false
-  });
-  // 最適化されたThree.jsシーン管理
+  });  // 最適化されたThree.jsシーン管理
   const {
     cameraRef,
     raycasterRef,
@@ -39,56 +38,58 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     handleResize,
     cleanup,
     getInteractableMeshes,
-    sceneRef  // 追加: シーン参照
+    sceneRef,  // 追加: シーン参照
+    updateSceneDifferentially  // 差分更新システム
   } = useOptimizedThreeJSScene(experiences);
-
-  // 最適化されたクリックハンドラー
+  // 最適化されたクリックハンドラー（デバウンス機能付き）
   const optimizedClickHandler = useCallback((e) => {
     if (!isInitialized || !canvasRef.current) return;
     
     console.log('🖱️ クリック処理開始');
     
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // レイキャスト計算をrequestIdleCallbackで非同期化
+    requestIdleCallback(() => {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    mouseRef.current.x = (x / rect.width) * 2 - 1;
-    mouseRef.current.y = -(y / rect.height) * 2 + 1;
+      mouseRef.current.x = (x / rect.width) * 2 - 1;
+      mouseRef.current.y = -(y / rect.height) * 2 + 1;
 
-    const meshes = getInteractableMeshes();
-    console.log('📋 クリック可能なメッシュ数:', meshes.length);
-    
-    if (raycasterRef.current && cameraRef.current && meshes.length > 0) {
-      raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
-      const intersects = raycasterRef.current.intersectObjects(meshes);
+      const meshes = getInteractableMeshes();
+      console.log('📋 クリック可能なメッシュ数:', meshes.length);
       
-      console.log('🎯 レイキャスト結果:', intersects.length, 'つのオブジェクトがヒット');
-      
-      if (intersects.length > 0) {
-        const clickedObject = intersects[0].object;
-        const userData = clickedObject.userData;
+      if (raycasterRef.current && cameraRef.current && meshes.length > 0) {
+        raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
+        const intersects = raycasterRef.current.intersectObjects(meshes);
         
-        console.log('📦 クリックされたオブジェクト:', {
-          type: userData.type,
-          experienceId: userData.experience?.id,
-          experienceTitle: userData.experience?.title,
-          isCompleted: userData.experience?.completed
-        });
+        console.log('🎯 レイキャスト結果:', intersects.length, 'つのオブジェクトがヒット');
         
-        // 浮遊ミッションの場合は詳細表示のみ（自動処理は無効化）
-        if (userData.type === 'floating') {
-          console.log('🎈 浮遊ミッションクリック - 詳細表示のみ実行');
-          if (userData.experience && onExperienceClick) {
+        if (intersects.length > 0) {
+          const clickedObject = intersects[0].object;
+          const userData = clickedObject.userData;
+          
+          console.log('📦 クリックされたオブジェクト:', {
+            type: userData.type,
+            experienceId: userData.experience?.id,
+            experienceTitle: userData.experience?.title,
+            isCompleted: userData.experience?.completed
+          });
+            // 浮遊ミッションの場合は詳細表示のみ（自動処理は無効化）
+          if (userData.type === 'floating') {
+            console.log('🎈 浮遊ミッションクリック - 詳細表示のみ実行');
+            if (userData.experience && onExperienceClick) {
+              onExperienceClick(userData.experience);
+            }
+          } else if (userData.experience && onExperienceClick) {
+            console.log('⚪ 完了済み球体クリック - 詳細表示実行');
             onExperienceClick(userData.experience);
           }
-        } else if (userData.experience && onExperienceClick) {
-          console.log('⚪ 完了済み球体クリック - 詳細表示実行');
-          onExperienceClick(userData.experience);
+        } else {
+          console.log('❌ クリック対象が見つかりませんでした');
         }
-      } else {
-        console.log('❌ クリック対象が見つかりませんでした');
       }
-    }
+    });
   }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef]);
 
   // 最適化されたホイールハンドラー
@@ -314,17 +315,18 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     touchState.current.touches = Array.from(e.touches);
   }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef]);  // Canvas初期化とアニメーション開始
   useEffect(() => {
+    // 🎯 本当に初期化が必要な場合のみ実行
     if (!canvasRef.current || experiences.length === 0) return;
-    
+
+    // 🎯 シーンが既に初期化されており、要素数に変化がない場合はスキップ
+    if (isInitialized && sceneRef.current) {
+      console.log('🚀 シーンは既に初期化済み - 初期化スキップ（差分更新は別のuseEffectで処理）');
+      return;
+    }
+
     // サーバーデータの読み込み待機
     if (serverLoading) {
       console.log('🔄 サーバーサイドビジュアライゼーションデータ読み込み中...');
-      return;
-    }
-    
-    // 🔧 重要な修正: シーンが既に初期化されている場合は再初期化をスキップ
-    if (isInitialized && sceneRef.current) {
-      console.log('🎯 シーンは既に初期化済み - 再初期化をスキップして部分更新のみ実行');
       return;
     }
     
@@ -337,10 +339,17 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
         console.log('🖥️ サーバーサイドビジュアライゼーションデータを使用:', visualizationData);
       } else {
         console.log('💻 フロントエンド計算でビジュアライゼーションを実行');
-      }
+      }      // シーン初期化（サーバーデータまたはフロントエンド計算）
+      // 🎯 初回初期化時のみ強制クリーンアップを実行
+      const forceCleanup = !isInitialized;
+      console.log('🎯 初期化モード分析:', {
+        'isInitialized': isInitialized,
+        'forceCleanup': forceCleanup,
+        'experiencesLength': experiences.length,
+        'シーン参照存在': !!sceneRef.current
+      });
       
-      // シーン初期化（サーバーデータまたはフロントエンド計算）
-      const { stars } = initializeScene(canvas, visualizationData);
+      const { stars } = initializeScene(canvas, visualizationData, forceCleanup);
       
       // アニメーション開始
       animationCleanup = startAnimation(stars);
@@ -391,29 +400,29 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
         
         // リソースのクリーンアップ
         cleanup();
-      };
-    } catch (error) {
+      };    } catch (error) {
       console.error('最適化されたシーンの初期化に失敗しました:', error);
       setIsInitialized(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     visualizationData, 
     serverLoading, 
     useServerData,
-    experiences.length, // 体験の数が変わった時のみ再初期化
-    initializeScene,
-    startAnimation,
-    handleResize,
-    cleanup,
-    optimizedClickHandler,
-    optimizedWheelHandler,
-    handleMouseDown,
-    handleMouseUp,
-    handleCameraDrag,
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd
+    experiences.length // 🎯 修正: 本当に必要な依存関係のみ - 長さ変更時のみ初期化
+    // ハンドラー関数は除外（無限ループを防ぐため）
   ]);
+
+  // 🎯 差分更新専用useEffect: experiencesの内容変更を監視
+  useEffect(() => {
+    if (!isInitialized || !canvasRef.current || experiences.length === 0) return;
+
+    console.log('🔄 差分更新チェック - experiencesの内容変更を検出');
+    const wasUpdated = updateSceneDifferentially(experiences);
+    if (wasUpdated) {
+      console.log('✅ 差分更新完了 - 新しいオブジェクトのみ追加');
+    }
+  }, [experiences, isInitialized, updateSceneDifferentially]);
   // レンダリング最適化のためのメモ化された統計情報
   const stats = React.useMemo(() => {
     const completed = experiences.filter(exp => exp.completed).length;
@@ -453,10 +462,10 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
             <p>ピンチ: ズーム</p>
             <p>ドラッグ: 視点移動</p>
             <p>タップ: 体験を選択</p>
-          </div>
-        </div>
+          </div>        </div>
       </div>
-    </div>  );
+    </div>
+  );
 };
 
 export default OptimizedExperienceStrings;

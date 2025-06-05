@@ -1,27 +1,92 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { TrendingUp, Calendar, Sparkles, CheckCircle2, Star, Plus, Edit3, Info } from 'lucide-react';
 import OptimizedExperienceStrings from '../components/ExperienceStrings/OptimizedExperienceStrings';
 
+// 最適化されたミッションアイテムコンポーネント
+const MissionItem = React.memo(({ exp, onExperienceClick, onClearMission }) => {
+  const handleExperienceClick = useCallback(() => {
+    onExperienceClick(exp);
+  }, [exp, onExperienceClick]);
+
+  const handleClearMission = useCallback(() => {
+    onClearMission(exp.id);
+  }, [exp.id, onClearMission]);
+
+  return (
+    <div className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300">
+      <div className="flex flex-col items-center gap-4">
+        <div 
+          onClick={handleExperienceClick} 
+          className="cursor-pointer text-center w-full"
+        >
+          <div className="font-semibold text-gray-800 mb-1">{exp.title}</div>
+          <div className="text-sm text-gray-600">{exp.category} / レベル{exp.level}</div>
+        </div>
+        
+        {/* 最適化された達成ボタン */}
+        <button
+          onClick={handleClearMission}
+          className="group relative bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+        >
+          {/* 背景の光る効果 */}
+          <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none"></div>
+          
+          {/* アイコンとテキスト */}
+          <div className="relative z-10 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
+            <span className="text-sm font-semibold">達成！</span>
+            <Star className="w-3 h-3 group-hover:scale-125 transition-transform duration-300" />
+          </div>
+          
+          {/* ボタン押下時の波紋効果 */}
+          <div className="absolute inset-0 bg-white/20 scale-0 group-active:scale-100 rounded-2xl transition-transform duration-150 pointer-events-none"></div>
+        </button>
+      </div>
+    </div>
+  );
+});
+
+MissionItem.displayName = 'MissionItem';
+
 const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExperienceClick, onClearMission, onNavigateToJournalEntry }) => {
-  const safeExperiences = Array.isArray(experiences) ? experiences : [];
+  // 最適化：experiencesの安全性チェックをメモ化
+  const safeExperiences = useMemo(() => 
+    Array.isArray(experiences) ? experiences : [], [experiences]
+  );
   
   // デバッグ用にコンソールログを追加
   console.log('HomeScreen userStats:', userStats);
   console.log('HomeScreen experiences:', experiences);
   
   // より強固なuserStatsのフォールバック
-  const safeUserStats = {
+  const safeUserStats = useMemo(() => ({
     totalExperiences: safeExperiences.length,
     currentStreak: userStats?.currentStreak || 0,
     diversityScore: userStats?.diversityScore || 0,
     badges: Array.isArray(userStats?.badges) ? userStats.badges : [],
     ...userStats
-  };
+  }), [userStats, safeExperiences.length]);
 
-  // 実際の体験数を計算
-  const actualTotalExperiences = safeExperiences.length;
-  const actualCompletedExperiences = safeExperiences.filter(e => e && e.completed).length;
-  const actualCurrentStreak = safeUserStats.currentStreak;
+  // 最適化：計算をメモ化
+  const {
+    actualTotalExperiences,
+    actualCompletedExperiences, 
+    actualCurrentStreak,
+    inProgressMissions
+  } = useMemo(() => {
+    const actualTotalExperiences = safeExperiences.length;
+    const actualCompletedExperiences = safeExperiences.filter(e => e && e.completed).length;
+    const actualCurrentStreak = safeUserStats.currentStreak;
+    const inProgressMissions = safeExperiences.filter(exp => !exp.completed);
+    
+    return {
+      actualTotalExperiences,
+      actualCompletedExperiences,
+      actualCurrentStreak,
+      inProgressMissions
+    };
+  }, [safeExperiences, safeUserStats.currentStreak]);
+
   const [showInfoPanel, setShowInfoPanel] = useState(false);
 
   useEffect(() => {
@@ -114,48 +179,22 @@ const HomeScreen = ({ experiences, userStats, onNavigateToRecommendation, onExpe
             <Sparkles className="w-5 h-5 lg:w-6 lg:h-6" />
             新しいお題を見つける
           </button>
-        </div>
-
-        {/* 進行中ミッション一覧 */}
+        </div>        {/* 進行中ミッション一覧 - 最適化版 */}
         <div className="mt-6 px-4 pb-32">
           <h2 className="text-lg font-bold mb-4 text-gray-800">進行中ミッション</h2>
           <div className="space-y-3">
-            {safeExperiences.filter(exp => !exp.completed).map(exp => (
-              <div key={exp.id} className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300">
-                <div className="flex flex-col items-center gap-4">
-                  <div 
-                    onClick={() => onExperienceClick(exp)} 
-                    className="cursor-pointer text-center w-full"
-                  >
-                    <div className="font-semibold text-gray-800 mb-1">{exp.title}</div>
-                    <div className="text-sm text-gray-600">{exp.category} / レベル{exp.level}</div>
-                  </div>
-                  
-                  {/* おしゃれな達成ボタン - 中央配置 */}
-                  <button
-                    onClick={() => onClearMission(exp.id)}
-                    className="group relative bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-2xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                  >
-                    {/* 背景の光る効果 */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none"></div>
-                    
-                    {/* アイコンとテキスト */}
-                    <div className="relative z-10 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
-                      <span className="text-sm font-semibold">達成！</span>
-                      <Star className="w-3 h-3 group-hover:scale-125 transition-transform duration-300" />
-                    </div>
-                    
-                    {/* ボタン押下時の波紋効果 */}
-                    <div className="absolute inset-0 bg-white/20 scale-0 group-active:scale-100 rounded-2xl transition-transform duration-150 pointer-events-none"></div>
-                  </button>
-                </div>
-              </div>
+            {inProgressMissions.map(exp => (
+              <MissionItem
+                key={exp.id}
+                exp={exp}
+                onExperienceClick={onExperienceClick}
+                onClearMission={onClearMission}
+              />
             ))}
           </div>
           
           {/* ミッションが無い場合 */}
-          {safeExperiences.filter(exp => !exp.completed).length === 0 && (
+          {inProgressMissions.length === 0 && (
             <div className="bg-white/60 backdrop-blur rounded-2xl p-8 text-center">
               <div className="text-6xl mb-4">🌟</div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">すべてのミッション完了！</h3>

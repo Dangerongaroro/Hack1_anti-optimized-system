@@ -11,5 +11,5 @@ langchain-core==0.1.52
 
 # 元のgoogle-generativeaiをコメントアウト
 # google-generativeai==0.3.2
-
+supabase
 
