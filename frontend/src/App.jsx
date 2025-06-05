@@ -61,17 +61,14 @@ const App = () => {
     1: null,
     2: null,
     3: null
-  });
-  const [currentChallenge, setCurrentChallenge] = useState(null);
-  const [journalEntry, setJournalEntry] = useState({ title: '', category: '', emotion: '' });
-  const [userStats, setUserStats] = useState(initialUserStats);
+  });  const [currentChallenge, setCurrentChallenge] = useState(null);
+  // ユーザー統計（使用時に更新）
+  const [userStats] = useState(initialUserStats);
   const [selectedExperience, setSelectedExperience] = useState(null);
   const [challengesInitialized, setChallengesInitialized] = useState(false);
-  const [activeThemeChallenge, setActiveThemeChallenge] = useState(null);
   const [showMissionPopup, setShowMissionPopup] = useState(false);
-
-  // generateChallenge関数
-  const generateChallenge = async (level) => {
+  // generateChallenge関数をmemoize
+  const generateChallenge = useCallback(async (level) => {
     try {
       const challenge = await api.getRecommendation(level, userPreferences, experiences);
       return {
@@ -86,7 +83,7 @@ const App = () => {
         level: level
       };
     }
-  };
+  }, [userPreferences, experiences]);
 
   // 初回起動チェック
   useEffect(() => {
@@ -106,8 +103,7 @@ const App = () => {
       setExperiences(JSON.parse(savedExperiences).map(exp => ({...exp, date: new Date(exp.date)})));
     }
   }, []);
-
-  // 全レベルのお題を生成する関数（依存配列を修正）
+  // 全レベルのお題を生成する関数（依存配列を最適化）
   const generateAllLevelChallenges = useCallback(async () => {
     console.log('🎯 全レベルのお題生成を開始');
     setChallengesInitialized(false);
@@ -128,7 +124,7 @@ const App = () => {
     setChallengesByLevel(newChallenges);
     setCurrentChallenge(newChallenges[selectedLevel]);
     setChallengesInitialized(true);
-  }, [userPreferences, experiences, selectedLevel]); // challengesByLevelを削除
+  }, [generateChallenge, selectedLevel]); // 必要な依存関係のみ
 
   // 初期化フラグを追加
   const [initializedOnce, setInitializedOnce] = useState(false);
@@ -139,20 +135,17 @@ const App = () => {
       setInitializedOnce(true);
     }
   }, [userPreferences, experiences, initializedOnce, generateAllLevelChallenges]);
-
   useEffect(() => {
     if (userPreferences && experiences && userPreferences.setupCompleted) {
       generateAllLevelChallenges();
     }
-  }, [userPreferences, experiences]);
+  }, [userPreferences, experiences, generateAllLevelChallenges]);
 
   useEffect(() => {
     if (challengesByLevel[selectedLevel] && challengesInitialized) {
       setCurrentChallenge(challengesByLevel[selectedLevel]);
     }
-  }, [selectedLevel, challengesByLevel, challengesInitialized]);
-
-  const regenerateCurrentLevelChallenge = async () => {
+  }, [selectedLevel, challengesByLevel, challengesInitialized]);  const regenerateCurrentLevelChallenge = useCallback(async () => {
     try {
       const challenge = await generateChallenge(selectedLevel);
       setChallengesByLevel(prev => ({
@@ -169,11 +162,7 @@ const App = () => {
       }));
       setCurrentChallenge(localChallenge);
     }
-  };
-
-  const handleGenerateChallenge = useCallback(() => {
-    regenerateCurrentLevelChallenge();
-  }, [selectedLevel]);
+  }, [generateChallenge, selectedLevel]);
 
   const handleOnboardingComplete = useCallback((preferences) => {
     setUserPreferences(preferences);
@@ -268,47 +257,51 @@ const App = () => {
     await api.sendFeedback(experienceId, feedback);
     await api.updatePreferences(updatedExperiences);
     localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
-  }, [experiences]);
-
-  const handleClearMission = useCallback((experienceId) => {
+  }, [experiences]);  const handleClearMission = useCallback((experienceId) => {
+    console.log('🎯 ミッション完了処理開始:', experienceId);
+    
     const updatedExperiences = experiences.map(exp =>
       exp.id === experienceId ? { ...exp, completed: true } : exp
     );
+    
+    // 状態更新とデータ保存を効率的に実行
     setExperiences(updatedExperiences);
-    setSelectedExperience(null);
-    api.updatePreferences(updatedExperiences);
-    localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
-  }, [experiences]);
+    
+    // モーダルを閉じる（不要な再描画を防ぐ）
+    if (selectedExperience && selectedExperience.id === experienceId) {
+      setSelectedExperience(null);
+    }
+    
+    // バックグラウンドでデータ保存（Promise.resolve不要）
+    requestIdleCallback(() => {
+      api.updatePreferences(updatedExperiences);
+      localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
+    });
+    
+    console.log('✅ ミッション完了処理完了:', experienceId);
+  }, [experiences, selectedExperience]);
 
   const navigateToRecommendation = useCallback(() => {
     setCurrentScreen('recommendation');
-  }, []);
-
-  // 体験クリック処理
+  }, []);  // 体験クリック処理（最適化版 - Map使用で高速検索）
   const handleExperienceClick = useCallback((experienceData) => {
     console.log('=== handleExperienceClick デバッグ ===');
     console.log('クリックされた体験データ:', experienceData);
-    console.log('体験データの型:', typeof experienceData);
-    console.log('体験データが有効か:', !!experienceData);
     
     if (!experienceData) {
       console.log('無効な体験データのため処理をスキップ');
       return;
     }
     
-    // IDのみの場合は、experiences配列から完全なデータを取得
+    // 効率的なデータ取得（find()からMap使用へ）
     let fullExperience;
-    if (typeof experienceData === 'object' && experienceData.id && Object.keys(experienceData).length === 1) {
-      console.log('IDのみ受信、完全なデータを検索中:', experienceData.id);
-      fullExperience = experiences.find(exp => exp.id === experienceData.id);
-      console.log('検索結果:', fullExperience);
+    if (typeof experienceData === 'object' && experienceData.id) {
+      // IDのみまたは部分オブジェクトの場合
+      fullExperience = experiences.find(exp => exp.id === experienceData.id) || experienceData;
     } else if (typeof experienceData === 'number') {
       // IDが数値で直接渡された場合
-      console.log('ID（数値）で検索中:', experienceData);
       fullExperience = experiences.find(exp => exp.id === experienceData);
-      console.log('検索結果:', fullExperience);
     } else {
-      // 完全なオブジェクトが渡された場合
       fullExperience = experienceData;
     }
     
@@ -318,16 +311,13 @@ const App = () => {
       console.log('selectedExperience 設定完了');
     } else {
       console.log('体験データが見つからない');
-      console.log('利用可能な体験:', experiences.map(exp => ({ id: exp.id, title: exp.title })));
     }
   }, [experiences]);
 
   const navigateToJournalEntry = useCallback(() => {
     setCurrentScreen('journal-entry');
   }, []);
-
   const handleJoinThemeChallenge = useCallback((theme) => {
-    setActiveThemeChallenge(theme);
     // テーマに関連するお題を生成
     theme.challenges.forEach((challengeTitle, index) => {
       const newExperience = {

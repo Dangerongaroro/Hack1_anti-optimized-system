@@ -1,9 +1,49 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { X, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
 
-// 体験詳細モーダル
-const ExperienceDetailModal = ({ experience, onClose, onFeedback, onClearMission }) => {
-  // デバッグコードを削除してクリーンアップ
+// 最適化された体験詳細モーダル
+const ExperienceDetailModal = React.memo(({ experience, onClose, onFeedback, onClearMission }) => {
+  // 日付フォーマットをメモ化
+  const formattedDate = useMemo(() => {
+    if (!experience?.date) return '日付不明';
+    
+    const date = experience.date instanceof Date ? 
+      experience.date : 
+      new Date(experience.date);
+      
+    return date.toLocaleDateString('ja-JP', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }, [experience?.date]);
+
+  // コールバック関数をメモ化
+  const handleClearMission = useCallback(() => {
+    if (experience?.id) {
+      onClearMission(experience.id);
+    }
+  }, [experience?.id, onClearMission]);
+
+  const handlePositiveFeedback = useCallback(() => {
+    if (experience?.id) {
+      onFeedback(experience.id, 'positive');
+    }
+  }, [experience?.id, onFeedback]);
+
+  const handleNeutralFeedback = useCallback(() => {
+    if (experience?.id) {
+      onFeedback(experience.id, 'neutral');
+    }
+  }, [experience?.id, onFeedback]);
+
+  const handleNegativeFeedback = useCallback(() => {
+    if (experience?.id) {
+      onFeedback(experience.id, 'negative');
+    }
+  }, [experience?.id, onFeedback]);
+
+  // early returnはフックの後に
   if (!experience) {
     return null;
   }
@@ -32,27 +72,14 @@ const ExperienceDetailModal = ({ experience, onClose, onFeedback, onClearMission
               {experience.completed ? '完了' : '進行中'}
             </span>
           </div>
-          
-          <p className="text-gray-600">
-            {experience.date ? (
-              experience.date instanceof Date ? 
-                experience.date.toLocaleDateString('ja-JP', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                }) :
-                new Date(experience.date).toLocaleDateString('ja-JP', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })
-            ) : '日付不明'}
+            <p className="text-gray-600">
+            {formattedDate}
           </p>
           
           {!experience.completed && (
             <div className="border-t pt-4">
               <button
-                onClick={() => onClearMission(experience.id)}
+                onClick={handleClearMission}
                 className="w-full py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
               >
                 達成した
@@ -65,21 +92,21 @@ const ExperienceDetailModal = ({ experience, onClose, onFeedback, onClearMission
               <p className="text-sm text-gray-700 mb-3">この体験はどうでしたか？</p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => onFeedback(experience.id, 'positive')}
+                  onClick={handlePositiveFeedback}
                   className="flex-1 py-2 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition-colors flex items-center justify-center gap-2"
                 >
                   <ThumbsUp className="w-4 h-4" />
                   良かった
                 </button>
                 <button
-                  onClick={() => onFeedback(experience.id, 'neutral')}
+                  onClick={handleNeutralFeedback}
                   className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                 >
                   <SkipForward className="w-4 h-4" />
                   普通
                 </button>
                 <button
-                  onClick={() => onFeedback(experience.id, 'negative')}
+                  onClick={handleNegativeFeedback}
                   className="flex-1 py-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors flex items-center justify-center gap-2"
                 >
                   <ThumbsDown className="w-4 h-4" />
@@ -92,6 +119,8 @@ const ExperienceDetailModal = ({ experience, onClose, onFeedback, onClearMission
       </div>
     </div>
   );
-};
+});
+
+ExperienceDetailModal.displayName = 'ExperienceDetailModal';
 
 export default ExperienceDetailModal;

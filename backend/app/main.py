@@ -1,5 +1,4 @@
-# backend/app/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from .routes import router as api_router
 
@@ -9,13 +8,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS設定を拡張
+# CORS設定を拡張（デプロイ用）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "http://localhost:5173",  # Vite開発サーバー
-        "http://127.0.0.1:5173"
+        "http://localhost:5173",
+        "https://*.vercel.app",  # Vercelドメイン用
+        "https://your-custom-domain.com"  # カスタムドメインがあれば
     ],
     allow_credentials=True,
     allow_methods=["*"],
