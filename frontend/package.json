@@ -2,9 +2,9 @@
   "name": "frontend",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
-  "scripts": {
+  "type": "module",  "scripts": {
     "dev": "vite",
+    "prebuild": "node -e \"if(process.platform==='win32'){console.log('Skipping prebuild on Windows')}else{require('child_process').execSync('rm -rf node_modules package-lock.json && npm install', {stdio: 'inherit'})}\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -29,6 +29,7 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "postcss": "^8.5.4",
+    "supabase": "^2.24.3",
     "tailwindcss": "^3.4.0",
     "vite": "^6.3.5"
   }
