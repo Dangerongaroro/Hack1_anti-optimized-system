@@ -1,0 +1,12 @@
+# Render specific ignore file
+# This file helps ensure that the dist directory is available during deployment
+
+# Include the dist directory explicitly
+!dist/
+!dist/**/*
+
+# Exclude development files that aren't needed in production
+.vite/
+node_modules/
+.env.local
+.env.development.local

@@ -44,8 +44,9 @@ yarn-error.log*
 .yarn-integrity
 .vite/
 
-# Build outputs
+# Build outputs (これが重要)
 build/
+dist/
 *.tgz
 *.tar.gz
 
@@ -82,10 +83,8 @@ masahiro_env/
 *.temp
 .cache/
 
-frontend/node_modules     # npm installで再生成可能
-frontend/.vite          # Viteの開発用キャッシュ
-frontend/package-lock.json # プロジェクトによっては
+frontend/node_modules
+frontend/.vite
+frontend/package-lock.json
 
-# Explicitly include dist directory for Render deployment
-!frontend/dist/
-!frontend/dist/**
+# distは含めない（Renderで自動生成される）
