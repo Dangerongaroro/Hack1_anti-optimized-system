@@ -105,15 +105,14 @@ const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
   };
 
   const growthMetrics = calculateGrowthMetrics();
-
   // 探求者バッジの定義
   const achievementBadges = [
     { name: '初心者探求者', icon: '🌱', condition: experiences.length >= 5, description: '5つの体験を完了' },
     { name: '体験コレクター', icon: '📦', condition: experiences.length >= 15, description: '15の体験を記録' },
-    { name: '多様性マスター', icon: '🌈', condition: userStats.diversityScore >= 70, description: '多様性スコア70%以上' },
+    { name: '多様性マスター', icon: '🌈', condition: (userStats?.diversityScore || 0) >= 70, description: '多様性スコア70%以上' },
     { name: '週末冒険家', icon: '🚀', condition: experiences.filter(e => e.level === 2).length >= 5, description: 'レベル2を5回達成' },
     { name: 'アドベンチャラー', icon: '⭐', condition: experiences.filter(e => e.level === 3).length >= 3, description: 'レベル3を3回達成' },
-    { name: '継続の達人', icon: '🔥', condition: userStats.currentStreak >= 7, description: '7日連続で体験' }
+    { name: '継続の達人', icon: '🔥', condition: (userStats?.currentStreak || 0) >= 7, description: '7日連続で体験' }
   ];
 
   const earnedBadges = achievementBadges.filter(badge => badge.condition);
@@ -158,13 +157,13 @@ const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
     setAutoSaveEnabled(enabled);
     api.setAutoSaveEnabled(enabled);
   };
-
   const handleManualSync = async () => {
     try {
       const experiences = JSON.parse(localStorage.getItem('experiences') || '[]');
       await api.updatePreferences(experiences);
       alert('データ同期が完了しました');
-    } catch (error) {
+    } catch (err) {
+      console.error('同期エラー:', err);
       alert('同期に失敗しました');
     }
   };
@@ -186,19 +185,17 @@ const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
               {growthMetrics ? `${growthMetrics.growthStage}の探求者` : '探求を始めて間もない'}
             </p>
           </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        </div>        <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="text-center">
-            <p className="text-2xl font-bold text-purple-600">{userStats.totalExperiences}</p>
+            <p className="text-2xl font-bold text-purple-600">{userStats?.totalExperiences || 0}</p>
             <p className="text-xs text-gray-600">体験数</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-pink-600">{userStats.diversityScore}%</p>
+            <p className="text-2xl font-bold text-pink-600">{userStats?.diversityScore || 0}%</p>
             <p className="text-xs text-gray-600">多様性スコア</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-blue-600">{userStats.currentStreak}</p>
+            <p className="text-2xl font-bold text-blue-600">{userStats?.currentStreak || 0}</p>
             <p className="text-xs text-gray-600">連続日数</p>
           </div>
         </div>
