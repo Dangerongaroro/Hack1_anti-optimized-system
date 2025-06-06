@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { getThemeColor } from '../../../utils/helpers';
-import { optimizedThreeUtils } from './optimizedThreeUtils';
+import { getThemeColor } from '../../../utils/helpers.js';
+import { optimizedThreeUtils } from './optimizedThreeUtils.js';
 
 /**
  * 最適化されたシーンセットアップ

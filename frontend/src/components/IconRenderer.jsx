@@ -1,5 +1,5 @@
 import React from 'react';
-import { iconMap } from '../utils/helpers';
+import { iconMap } from '../utils/helpers.js';
 import { HelpCircle } from 'lucide-react'; // デフォルト/フォールバック用アイコン
 
 const IconRenderer = ({ iconName, ...props }) => {

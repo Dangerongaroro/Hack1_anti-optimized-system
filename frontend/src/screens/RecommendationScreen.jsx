@@ -1,4 +1,4 @@
-import IconRenderer from '../components/IconRenderer';
+import IconRenderer from '../components/IconRenderer.jsx';
 import { X, RefreshCw, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 

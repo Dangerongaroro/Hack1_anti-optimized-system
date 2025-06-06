@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { TrendingUp, Calendar, Sparkles, CheckCircle2, Star, Plus, Edit3, Info } from 'lucide-react';
-import OptimizedExperienceStrings from '../components/ExperienceStrings/OptimizedExperienceStrings';
+import OptimizedExperienceStrings from '../components/ExperienceStrings/OptimizedExperienceStrings.jsx';
 
 // 最適化されたミッションアイテムコンポーネント
 const MissionItem = React.memo(({ exp, onExperienceClick, onClearMission }) => {
