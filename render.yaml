@@ -1,4 +1,4 @@
-# プロジェクトルート/
+# Render.com デプロイ設定
 services:
   # バックエンドサービス
   - type: web
@@ -14,10 +14,19 @@ services:
       - key: GOOGLE_API_KEY
         sync: false
       - key: DEBUG
-        value: "True"
-      - key: PYTHONPATH
-        value: "."
-    healthCheckPath: "/health"  # フロントエンドサービス  - type: web
+        value: false
+      - key: FRONTEND_URL
+        value: "https://hack1-anti-optimized-system.onrender.com"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+    healthCheckPath: "/health"
+
+  # フロントエンドサービス
+  - type: web
     name: seren-paths-frontend
     env: static
     rootDir: frontend
@@ -32,9 +41,10 @@ services:
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
-        sync: false      - key: VITE_API_URL
-        value: "https://srv-d10sbe63jp1c739anh1g.onrender.com/api"
+        sync: false      
+      - key: VITE_API_URL
+        value: https://seren-path-backend.onrender.com/api
       - key: VITE_DEV_MODE
-        value: "false"
+        value: false
       - key: VITE_SKIP_AUTH
-        value: "false"
+        value: false
