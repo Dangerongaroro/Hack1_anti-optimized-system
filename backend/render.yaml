@@ -6,11 +6,9 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
     envVars:
       - key: GOOGLE_API_KEY
-        sync: false
-      - key: DEBUG
-        value: "false"  # 本番環境では false
-      - key: FRONTEND_URL
-        value: "https://hack1-anti-optimized-system.onrender.com"
+        sync: false      - key: DEBUG
+        value: "true"  # CORS問題解決のため一時的にtrue      - key: FRONTEND_URL
+        value: "https://srv-d10tcb6mcj7s73c25j7g.onrender.com"
       - key: PYTHON_VERSION
         value: "3.11"
     # ヘルスチェック設定

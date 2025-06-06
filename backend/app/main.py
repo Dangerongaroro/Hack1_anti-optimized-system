@@ -2,7 +2,11 @@
 import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from .routes import router as api_router
+
+# .envファイルを読み込み
+load_dotenv()
 
 # 環境変数からCORS設定を取得
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://hack1-anti-optimized-system.onrender.com")
@@ -11,8 +15,7 @@ ALLOWED_ORIGINS = [
     "http://localhost:5173", 
     "http://localhost:5174",
     "https://frontend.onrender.com",
-    "https://seren-paths-frontend.onrender.com",
-    "https://hack1-anti-optimized-system.onrender.com",
+    "https://hack1-anti-optimized-system.onrender.com",  # 実際のフロントエンドURL
     FRONTEND_URL
 ]
 
