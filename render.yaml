@@ -33,7 +33,7 @@ services:
       ls -la dist/ &&
       echo "📄 Files in dist:" &&
       find dist/ -type f | head -10
-    staticPublishPath: dist  # ./ を削除！
+    staticPublishPath: /opt/render/project/src/frontend/dist
     envVars:
       - key: NODE_VERSION
         value: "18.18.0"
