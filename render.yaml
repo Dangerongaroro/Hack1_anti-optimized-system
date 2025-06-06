@@ -31,7 +31,7 @@ services:
       cd frontend &&
       npm ci &&
       npm run build
-    staticPublishPath: frontend/dist
+    staticPublishPath: dist
     envVars:
       - key: NODE_VERSION
         value: "18.18.0"
