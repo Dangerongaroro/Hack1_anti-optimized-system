@@ -24,23 +24,14 @@ services:
   - type: web
     name: seren-paths-frontend
     env: static
-    rootDir: frontend
+    type: web
+    name: seren-paths-frontend
+    env: static
     buildCommand: |
-      echo "🚀 Building Seren Paths Frontend..." &&
-      echo "📁 Initial directory: $(pwd)" &&
-      echo "📂 Directory contents:" &&
-      ls -la &&
+      cd frontend &&
       npm ci &&
-      npm run build &&
-      echo "✅ Build complete" &&
-      echo "📁 After build directory: $(pwd)" &&
-      echo "📂 Current directory contents:" &&
-      ls -la &&
-      echo "📂 Dist directory contents:" &&
-      ls -la dist/ &&
-      echo "🔍 Finding dist directories from root:" &&
-      find /opt/render/project/src -name "dist" -type d 2>/dev/null || true
-    staticPublishPath: dist
+      npm run build
+    staticPublishPath: frontend/dist
     envVars:
       - key: NODE_VERSION
         value: "18.18.0"
