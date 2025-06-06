@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Bell, Shield, Settings, Download, Award, TrendingUp, Target } from 'lucide-react';
+import { ChevronRight, Bell, Shield, Settings, Download, Award, TrendingUp, Target, LogIn, LogOut, User as UserIcon } from 'lucide-react';
 import api from '../services/api.js';
+import { supabase } from '../lib/supabase.js';
 
 const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
   const [showPrivacySettings, setShowPrivacySettings] = useState(false);
@@ -20,8 +21,64 @@ const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
     dailyChallenge: true,
     achievements: true,
     weeklyReport: false
-  });
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(api.getAutoSaveEnabled());
+  });  const [autoSaveEnabled, setAutoSaveEnabled] = useState(api.getAutoSaveEnabled());
+  const [authStatus, setAuthStatus] = useState({ isAuthenticated: false, user: null });
+  const [authLoading, setAuthLoading] = useState(false);
+  
+  // 認証状態の監視
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setAuthStatus({ isAuthenticated: !!user, user });
+    };
+    
+    checkAuth();
+    
+    // 認証状態変更を監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setAuthStatus({ 
+          isAuthenticated: !!session?.user, 
+          user: session?.user || null 
+        });
+      }
+    );
+    
+    return () => subscription.unsubscribe();
+  }, []);
+  
+  // Googleでサインイン
+  const handleGoogleSignIn = async () => {
+    setAuthLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('サインインエラー:', error);
+      alert('サインインに失敗しました');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+  
+  // サインアウト
+  const handleSignOut = async () => {
+    setAuthLoading(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      console.error('サインアウトエラー:', error);
+      alert('サインアウトに失敗しました');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   // 成長分析を計算
   const calculateGrowthMetrics = () => {
@@ -168,10 +225,62 @@ const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
                   </span>
                 </div>
                 <p className="text-xs text-gray-600">{badge.description}</p>
-              </div>
-            ))}
+              </div>            ))}
           </div>
         </div>
+      </div>
+
+      {/* 認証セクション */}
+      <div className="bg-white/60 backdrop-blur rounded-2xl p-6 mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <UserIcon className="w-5 h-5 text-gray-600" />
+          <h4 className="font-medium text-gray-800">アカウント</h4>
+        </div>
+        
+        {authStatus.isAuthenticated ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <UserIcon className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-800">
+                  {authStatus.user?.email || 'ログイン済み'}
+                </p>
+                <p className="text-xs text-green-600">データは自動的に同期されます</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleSignOut}
+              disabled={authLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+            >
+              <LogOut className="w-4 h-4" />
+              {authLoading ? 'サインアウト中...' : 'サインアウト'}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800 mb-2">
+                アカウントでログインすると、データが自動的に同期され、デバイス間で共有できます。
+              </p>
+              <p className="text-xs text-blue-600">
+                現在はゲストモードで利用中です
+              </p>
+            </div>
+            
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={authLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 w-full justify-center"
+            >
+              <LogIn className="w-4 h-4" />
+              {authLoading ? 'サインイン中...' : 'Googleでサインイン'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 成長分析セクション */}

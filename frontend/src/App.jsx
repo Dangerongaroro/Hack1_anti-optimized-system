@@ -5,6 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { initialExperiences, initialUserStats } from './constants/initialData.js';
 import api from './services/api.js';
 import { generateChallengeLocal } from './utils/helpers.js';
+import { supabase } from './lib/supabase.js';
 
 // コンポーネント
 import HomeScreen from './screens/HomeScreen.jsx';
@@ -65,8 +66,67 @@ const App = () => {
   // ユーザー統計（使用時に更新）
   const [userStats] = useState(initialUserStats);
   const [selectedExperience, setSelectedExperience] = useState(null);
-  const [challengesInitialized, setChallengesInitialized] = useState(false);
+  
+  // selectedExperience の変更を監視
+  useEffect(() => {
+    console.log('🔍 selectedExperience 状態変更:', selectedExperience);
+  }, [selectedExperience]);  const [challengesInitialized, setChallengesInitialized] = useState(false);
   const [showMissionPopup, setShowMissionPopup] = useState(false);
+  
+  // 認証状態管理
+  const [authState, setAuthState] = useState({
+    isLoading: true,
+    isAuthenticated: false,
+    user: null
+  });
+  
+  // 認証が必要かどうかを判定
+  const shouldRequireAuth = import.meta.env.VITE_SKIP_AUTH !== 'true';
+  
+  // 認証状態の監視
+  useEffect(() => {
+    if (!shouldRequireAuth) {
+      setAuthState({
+        isLoading: false,
+        isAuthenticated: false,
+        user: null
+      });
+      return;
+    }
+    
+    // 現在の認証状態をチェック
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setAuthState({
+          isLoading: false,
+          isAuthenticated: !!session?.user,
+          user: session?.user || null
+        });
+      } catch (error) {
+        console.error('認証状態チェックエラー:', error);
+        setAuthState({
+          isLoading: false,
+          isAuthenticated: false,
+          user: null
+        });
+      }
+    };
+    
+    checkAuth();
+    
+    // 認証状態変更を監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('認証状態変更:', event, session?.user?.email);
+      setAuthState({
+        isLoading: false,
+        isAuthenticated: !!session?.user,
+        user: session?.user || null
+      });
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [shouldRequireAuth]);
   // generateChallenge関数をmemoize
   const generateChallenge = useCallback(async (level) => {
     try {
@@ -287,6 +347,7 @@ const App = () => {
   const handleExperienceClick = useCallback((experienceData) => {
     console.log('=== handleExperienceClick デバッグ ===');
     console.log('クリックされた体験データ:', experienceData);
+    console.log('現在のselectedExperience:', selectedExperience);
     
     if (!experienceData) {
       console.log('無効な体験データのため処理をスキップ');
@@ -312,7 +373,7 @@ const App = () => {
     } else {
       console.log('体験データが見つからない');
     }
-  }, [experiences]);
+  }, [experiences, selectedExperience]);
 
   const navigateToJournalEntry = useCallback(() => {
     setCurrentScreen('journal-entry');
@@ -336,6 +397,26 @@ const App = () => {
     });
     setCurrentScreen('home');
   }, [experiences]);
+  // 認証ローディング中の表示
+  if (authState.isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">認証状態を確認中...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // 認証が必要で未認証の場合は認証画面を表示
+  if (shouldRequireAuth && !authState.isAuthenticated) {
+    return (
+      <ErrorBoundary className="min-h-screen">
+        <ProfileScreen onNavigate={setCurrentScreen} />
+      </ErrorBoundary>
+    );
+  }
 
   // 初回起動時はオンボーディング画面を表示
   if (isFirstLaunch) {
@@ -394,12 +475,13 @@ const App = () => {
               onBack={() => setCurrentScreen('home')}
               onJoinChallenge={handleJoinThemeChallenge}
             />
-          )}
-
-          {selectedExperience && (
+          )}          {selectedExperience && (
             <ExperienceDetailModal
               experience={selectedExperience}
-              onClose={() => setSelectedExperience(null)}
+              onClose={() => {
+                console.log('モーダルを閉じる処理');
+                setSelectedExperience(null);
+              }}
               onFeedback={handleExperienceFeedback}
               onClearMission={handleClearMission}
             />
