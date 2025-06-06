@@ -15,7 +15,9 @@ ALLOWED_ORIGINS = [
     "http://localhost:5173", 
     "http://localhost:5174",
     "https://hack1-anti-optimized-system.onrender.com",# 実際のフロントエンドURL
-    FRONTEND_URL
+    "https://seren-path-frontend.onrender.com",  # フロントエンドのRenderデプロイURL
+    FRONTEND_URL,
+    "*"  # デバッグ用に一時的にすべて許可
 ]
 
 # デバッグモードの場合は全て許可

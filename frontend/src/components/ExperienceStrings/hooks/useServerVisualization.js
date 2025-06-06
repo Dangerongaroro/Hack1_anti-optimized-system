@@ -1,5 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 
+// API設定（デプロイ対応）
+const getApiBaseUrl = () => {
+  // 本番環境の場合
+  if (import.meta.env.PROD) {
+    return 'https://seren-path-backend.onrender.com/api';
+  }
+  
+  // 開発環境の場合
+  return import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
 /**
  * サーバーサイドビジュアライゼーションフック
  * サーバーが利用できない場合はフロントエンドにフォールバック
@@ -84,21 +97,46 @@ export const useServerVisualization = (experiences) => {
 
   /**
    * サーバーからビジュアライゼーションデータを取得
-   */
-  const fetchServerVisualizationData = useCallback(async (experiencesData) => {
+   */  const fetchServerVisualizationData = useCallback(async (experiencesData) => {
     try {
       setIsLoading(true);
-      setServerError(null);      const response = await fetch('/api/visualization/experience-strings', {
+      setServerError(null);
+
+      const apiUrl = `${API_BASE_URL}/visualization/experience-strings`;
+      console.log('🔗 ビジュアライゼーションAPI呼び出し:', apiUrl);
+      console.log('🌍 環境情報:', {
+        PROD: import.meta.env.PROD,
+        MODE: import.meta.env.MODE,
+        VITE_API_URL: import.meta.env.VITE_API_URL,
+        使用されるAPI_BASE_URL: API_BASE_URL,
+        完全なAPIエンドポイント: apiUrl
+      });
+        // タイムアウトとアボートコントローラーを追加
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒タイムアウト
+
+      console.log('📤 送信データ:', JSON.stringify(experiencesData, null, 2));
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify(experiencesData),
+        signal: controller.signal,
       });
 
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
-      }      const serverData = await response.json();
+      clearTimeout(timeoutId);if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ サーバーエラー詳細:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          errorBody: errorText
+        });
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}. Response: ${errorText}`);
+      }const serverData = await response.json();
         if (serverData && serverData.status === 'success') {
         // サーバーデータにisServerDataフラグを確実に設定する
         const enhancedData = {
@@ -111,9 +149,15 @@ export const useServerVisualization = (experiences) => {
         return enhancedData;
       } else {
         throw new Error('Server returned invalid data structure');
-      }
-    } catch (error) {
+      }    } catch (error) {
       console.warn('⚠️ サーバーサイドビジュアライゼーション取得に失敗:', error.message);
+      console.warn('🔍 詳細情報:', {
+        apiUrl: `${API_BASE_URL}/visualization/experience-strings`,
+        environment: import.meta.env.MODE,
+        experiencesCount: experiencesData?.length || 0,
+        errorType: error.name,
+        errorStack: error.stack
+      });
       setServerError(error.message);
       
       // フォールバックデータを生成
