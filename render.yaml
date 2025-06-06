@@ -3,8 +3,8 @@ services:
     name: frontend
     env: static
     rootDir: frontend
-    buildCommand: npm ci --production=false && npm run build
-    staticPublishPath: dist
+    buildCommand: npm ci && npm run build && ls -la dist
+    staticPublishPath: ./dist
     envVars:
       - key: NODE_VERSION
         value: "18.18.0"
