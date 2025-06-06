@@ -14,7 +14,6 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:5174",
-        "https://*.onrender.com",
         "https://frontend.onrender.com",
         "https://seren-paths-frontend.onrender.com"
     ],

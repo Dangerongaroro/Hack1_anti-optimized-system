@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import ErrorBoundary from './components/ErrorBoundary';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 // 定数とサービス
-import { initialExperiences, initialUserStats } from './constants/initialData';
-import api from './services/api';
+import { initialExperiences, initialUserStats } from './constants/initialData.js';
+import api from './services/api.js';
 import { generateChallengeLocal } from './utils/helpers.js';
 
 // コンポーネント
 import HomeScreen from './screens/HomeScreen.jsx';
-import RecommendationScreen from './screens/RecommendationScreen';
-import ProfileScreen from './screens/ProfileScreen';
-import OnboardingScreen from './screens/OnboardingScreen';
-import NavigationBar from './components/NavigationBar';
-import ExperienceDetailModal from './components/ExperienceDetailModal';
-import StringsGalleryScreen from './screens/StringsGalleryScreen';
-import JournalEntryScreen from './screens/JournalEntryScreen';
-import ThemeChallengeScreen from './screens/ThemeChallengeScreen';
-import MissionPopup from './components/MissionPopup';
+import RecommendationScreen from './screens/RecommendationScreen.jsx';
+import ProfileScreen from './screens/ProfileScreen.jsx';
+import OnboardingScreen from './screens/OnboardingScreen.jsx';
+import NavigationBar from './components/NavigationBar.jsx';
+import ExperienceDetailModal from './components/ExperienceDetailModal.jsx';
+import StringsGalleryScreen from './screens/StringsGalleryScreen.jsx';
+import JournalEntryScreen from './screens/JournalEntryScreen.jsx';
+import ThemeChallengeScreen from './screens/ThemeChallengeScreen.jsx';
+import MissionPopup from './components/MissionPopup.jsx';
 
 const App = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState(true);

@@ -9,8 +9,8 @@ import {
   updateOptimizedConnectionThreads,
   disposeOptimizedScene,
   logTotalObjectCount
-} from '../utils/optimizedSceneSetup';
-import { useOptimizedThreeJSAnimation } from './useOptimizedThreeJSAnimation';
+} from '../utils/optimizedSceneSetup.js';
+import { useOptimizedThreeJSAnimation } from './useOptimizedThreeJSAnimation.js';
 
 /**
  * 最適化されたThree.jsシーン管理フック

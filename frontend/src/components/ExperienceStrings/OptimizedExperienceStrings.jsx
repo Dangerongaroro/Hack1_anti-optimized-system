@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import { useOptimizedThreeJSScene } from './hooks/useOptimizedThreeJSScene';
-import { useServerVisualization } from './hooks/useServerVisualization';
+import { useOptimizedThreeJSScene } from './hooks/useOptimizedThreeJSScene.js';
+import { useServerVisualization } from './hooks/useServerVisualization.js';
 
 /**
  * 最適化されたExperienceStringsコンポーネント（ホバー機能なし）

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OptimizedAnimationManager } from '../utils/optimizedThreeUtils';
+import { OptimizedAnimationManager } from '../utils/optimizedThreeUtils.js';
 
 /**
  * 最適化されたThree.jsアニメーションフック

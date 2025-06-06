@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, Bell, Shield, Settings, Download, Award, TrendingUp, Target } from 'lucide-react';
-import api from '../services/api';
+import api from '../services/api.js';
 
 const ProfileScreen = ({ userStats, onResetOnboarding, experiences = [] }) => {
   const [showPrivacySettings, setShowPrivacySettings] = useState(false);

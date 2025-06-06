@@ -18,29 +18,73 @@ except ImportError:
 load_dotenv()
 
 class AIRecommendationService:
-    """LangChain + Google Gemini を使用したAI推奨サービス"""
-    
     def __init__(self):
-        # 環境変数からAPIキーを取得
+        # 環境変数の詳細確認
         google_api_key = os.getenv("GOOGLE_API_KEY")
+        
+        print("🤖 AI Service Initialization:")
+        print(f"   LANGCHAIN_AVAILABLE: {LANGCHAIN_AVAILABLE}")
+        print(f"   API Key exists: {google_api_key is not None}")
+        print(f"   API Key length: {len(google_api_key) if google_api_key else 0}")
+        print(f"   API Key valid format: {google_api_key and len(google_api_key) > 20 if google_api_key else False}")
         
         if LANGCHAIN_AVAILABLE and google_api_key and google_api_key != 'your_api_key_here':
             try:
+                print("🔄 Attempting to initialize Gemini API...")
                 self.model = ChatGoogleGenerativeAI(
-                    model="gemma-3-12b-it",
-                    google_api_key=google_api_key
+                    model="gemini-pro",  # モデル名を修正
+                    google_api_key=google_api_key,
+                    temperature=0.7
                 )
-                # 接続テストを削除または遅延実行
                 self.enabled = True
-                print("✅ AI Service: LangChain + Gemini API initialized successfully")
+                print("✅ AI Service: Gemini API initialized successfully")
+                
+                # 簡単な接続テスト（起動時ではなく、必要時に実行）
+                # self.test_connection()
+                
             except Exception as e:
                 self.model = None
                 self.enabled = False
-                print(f"⚠️ AI Service: Failed to initialize Gemini API: {str(e)}")
+                print(f"❌ AI Service: Failed to initialize Gemini API: {str(e)}")
+                print(f"   Error type: {type(e).__name__}")
         else:
             self.model = None
             self.enabled = False
-            print("⚠️ AI Service: No API key found or LangChain not available, running in fallback mode")
+            reasons = []
+            if not LANGCHAIN_AVAILABLE:
+                reasons.append("LangChain not available")
+            if not google_api_key:
+                reasons.append("No API key")
+            elif google_api_key == 'your_api_key_here':
+                reasons.append("Placeholder API key")
+            
+            print(f"⚠️ AI Service disabled: {', '.join(reasons)}")
+    
+    def test_connection_endpoint(self) -> dict:
+        """デバッグ用の接続テストエンドポイント"""
+        if not self.enabled:
+            return {
+                "status": "disabled",
+                "message": "AI service is not enabled",
+                "langchain_available": LANGCHAIN_AVAILABLE,
+                "api_key_exists": "GOOGLE_API_KEY" in os.environ
+            }
+        
+        try:
+            message = HumanMessage(content="Hello, test connection")
+            response = self.model.invoke([message])
+            return {
+                "status": "success",
+                "message": "AI service is working",
+                "response_length": len(response.content),
+                "model_name": "gemini-pro"
+            }
+        except Exception as e:
+            return {
+                "status": "error", 
+                "message": f"AI service test failed: {str(e)}",
+                "error_type": type(e).__name__
+            }
     
     # 接続テストを別メソッドに分離
     def lazy_test_connection(self) -> bool:

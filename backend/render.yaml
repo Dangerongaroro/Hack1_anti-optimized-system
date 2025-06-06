@@ -8,4 +8,10 @@ services:
       - key: GOOGLE_API_KEY
         sync: false
       - key: DEBUG
-        value: "False"
+        value: "True"  # 初回デプロイ時はTrue、安定後にFalseに
+      - key: FRONTEND_SERVICE_NAME
+        value: "seren-paths-frontend"  # フロントエンドのサービス名に合わせて変更
+      - key: FRONTEND_URL
+        sync: false  # Renderダッシュボードで設定
+    # ヘルスチェック設定
+    healthCheckPath: "/health"
