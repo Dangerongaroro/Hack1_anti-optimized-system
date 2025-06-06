@@ -85,3 +85,7 @@ masahiro_env/
 frontend/node_modules     # npm installで再生成可能
 frontend/.vite          # Viteの開発用キャッシュ
 frontend/package-lock.json # プロジェクトによっては
+
+# Explicitly include dist directory for Render deployment
+!frontend/dist/
+!frontend/dist/**
