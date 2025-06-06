@@ -1,5 +1,6 @@
 
 import os
+import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -17,7 +18,6 @@ ALLOWED_ORIGINS = [
     "https://hack1-anti-optimized-system.onrender.com",# 実際のフロントエンドURL
     "https://seren-path-frontend.onrender.com",  # フロントエンドのRenderデプロイURL
     FRONTEND_URL,
-    "*"  # デバッグ用に一時的にすべて許可
 ]
 
 # デバッグモードの場合は全て許可
@@ -30,15 +30,24 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs" if os.getenv("DEBUG", "false").lower() == "true" else None,
     redoc_url="/redoc" if os.getenv("DEBUG", "false").lower() == "true" else None
+    version="1.0.0",
+    docs_url="/docs" if os.getenv("DEBUG", "false").lower() == "true" else None,
+    redoc_url="/redoc" if os.getenv("DEBUG", "false").lower() == "true" else None
 )
 
+# CORS設定（デプロイ対応）
 # CORS設定（デプロイ対応）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,  # デプロイ時は認証情報を無効化
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,  # デプロイ時は認証情報を無効化
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"]
     expose_headers=["*"]
 )
 
