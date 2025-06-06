@@ -1,4 +1,4 @@
-# プロジェクトルート/render.yaml
+# プロジェクトルート/
 services:
   # バックエンドサービス
   - type: web
@@ -24,14 +24,12 @@ services:
   - type: web
     name: seren-paths-frontend
     env: static
-    type: web
-    name: seren-paths-frontend
-    env: static
+    rootDir: frontend
     buildCommand: |
-      cd frontend &&
       npm ci &&
       npm run build
     staticPublishPath: dist
+
     envVars:
       - key: NODE_VERSION
         value: "18.18.0"
