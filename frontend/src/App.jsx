@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 // 定数とサービス
@@ -144,6 +144,20 @@ const App = () => {
       };
     }
   }, [userPreferences, experiences]);
+  // デバウンス用のタイマーRef
+  const debounceTimerRef = useRef(null);
+
+  // デバウンス付きのAPI更新関数
+  const debouncedUpdatePreferences = useCallback((updatedExperiences, delay = 2000) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      console.log('🔄 デバウンス後にプリファレンス更新実行');
+      api.updatePreferences(updatedExperiences);
+    }, delay);
+  }, []);
 
   // 初回起動チェック
   useEffect(() => {
@@ -163,6 +177,7 @@ const App = () => {
       setExperiences(JSON.parse(savedExperiences).map(exp => ({...exp, date: new Date(exp.date)})));
     }
   }, []);
+
   // 全レベルのお題を生成する関数（依存配列を最適化）
   const generateAllLevelChallenges = useCallback(async () => {
     console.log('🎯 全レベルのお題生成を開始');
@@ -187,25 +202,21 @@ const App = () => {
   }, [generateChallenge, selectedLevel]); // 必要な依存関係のみ
 
   // 初期化フラグを追加
-  const [initializedOnce, setInitializedOnce] = useState(false);
-
+  const [initializedOnce, setInitializedOnce] = useState(false);  // 🎯 最適化: 統合されたuseEffect - 初期化と選択レベルの更新を1つにまとめる
   useEffect(() => {
-    if (userPreferences?.setupCompleted && experiences && !initializedOnce) {
+    // 初回チャレンジ生成（1回のみ）
+    if (userPreferences?.setupCompleted && experiences.length > 0 && !initializedOnce) {
+      console.log('🚀 初回チャレンジ生成開始 - 1回のみ実行');
       generateAllLevelChallenges();
       setInitializedOnce(true);
+      return; // 初回生成時は現在のチャレンジ設定をスキップ
     }
-  }, [userPreferences, experiences, initializedOnce, generateAllLevelChallenges]);
-  useEffect(() => {
-    if (userPreferences && experiences && userPreferences.setupCompleted) {
-      generateAllLevelChallenges();
-    }
-  }, [userPreferences, experiences, generateAllLevelChallenges]);
-
-  useEffect(() => {
+    
+    // レベル選択変更時の現在チャレンジ更新
     if (challengesByLevel[selectedLevel] && challengesInitialized) {
       setCurrentChallenge(challengesByLevel[selectedLevel]);
     }
-  }, [selectedLevel, challengesByLevel, challengesInitialized]);  const regenerateCurrentLevelChallenge = useCallback(async () => {
+  }, [userPreferences?.setupCompleted, experiences.length, initializedOnce, generateAllLevelChallenges, selectedLevel, challengesByLevel, challengesInitialized]);const regenerateCurrentLevelChallenge = useCallback(async () => {
     try {
       const challenge = await generateChallenge(selectedLevel);
       setChallengesByLevel(prev => ({
@@ -250,7 +261,6 @@ const App = () => {
     });
     setCurrentChallenge(null);
   }, []);
-
   const acceptChallenge = useCallback(() => {
     if (currentChallenge) {
       const newExperience = {
@@ -275,11 +285,16 @@ const App = () => {
       setExperiences(updatedExperiences);
       setCurrentScreen('home');
       setCurrentChallenge(null);
-      api.updatePreferences(updatedExperiences);
-      localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
+      
+      // バックグラウンドでデータ保存（デバウンス付き）
+      requestIdleCallback(() => {
+        localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
+        debouncedUpdatePreferences(updatedExperiences);
+      });
+      
       setShowMissionPopup(true); // ミッション開始時にポップアップを表示
     }
-  }, [currentChallenge, experiences, selectedLevel]);
+  }, [currentChallenge, experiences, selectedLevel, debouncedUpdatePreferences]);
 
   const handleCloseMissionPopup = useCallback(() => {
     setShowMissionPopup(false);
@@ -291,7 +306,6 @@ const App = () => {
       await api.sendFeedback(challengeId, reason);
     }
   }, [currentChallenge]);
-
   const saveJournalEntry = useCallback((entry) => {
     const newExperience = {
       id: experiences.length + 1,
@@ -304,20 +318,29 @@ const App = () => {
     const updatedExperiences = [...experiences, newExperience];
     setExperiences(updatedExperiences);
     setCurrentScreen('home');
-    api.updatePreferences(updatedExperiences);
-    localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
-  }, [experiences]);
-
+    
+    // バックグラウンドでデータ保存（デバウンス付き）
+    requestIdleCallback(() => {
+      localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
+      debouncedUpdatePreferences(updatedExperiences);
+    });
+  }, [experiences, debouncedUpdatePreferences]);
   const handleExperienceFeedback = useCallback(async (experienceId, feedback) => {
     const updatedExperiences = experiences.map(exp =>
       exp.id === experienceId ? { ...exp, feedback } : exp
     );
     setExperiences(updatedExperiences);
     setSelectedExperience(null);
+    
+    // フィードバックのAPI呼び出しは即座に実行（ユーザーの意図を反映するため）
     await api.sendFeedback(experienceId, feedback);
-    await api.updatePreferences(updatedExperiences);
-    localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
-  }, [experiences]);  const handleClearMission = useCallback((experienceId) => {
+    
+    // プリファレンス更新はデバウンス付き
+    requestIdleCallback(() => {
+      localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
+      debouncedUpdatePreferences(updatedExperiences);
+    });
+  }, [experiences, debouncedUpdatePreferences]);const handleClearMission = useCallback((experienceId) => {
     console.log('🎯 ミッション完了処理開始:', experienceId);
     
     const updatedExperiences = experiences.map(exp =>
@@ -332,18 +355,26 @@ const App = () => {
       setSelectedExperience(null);
     }
     
-    // バックグラウンドでデータ保存（Promise.resolve不要）
+    // バックグラウンドでデータ保存（デバウンス付き）
     requestIdleCallback(() => {
-      api.updatePreferences(updatedExperiences);
       localStorage.setItem('experiences', JSON.stringify(updatedExperiences));
+      // デバウンスされたAPI呼び出し
+      debouncedUpdatePreferences(updatedExperiences);
     });
     
     console.log('✅ ミッション完了処理完了:', experienceId);
-  }, [experiences, selectedExperience]);
+  }, [experiences, selectedExperience, debouncedUpdatePreferences]);
 
   const navigateToRecommendation = useCallback(() => {
     setCurrentScreen('recommendation');
-  }, []);  // 体験クリック処理（最適化版 - Map使用で高速検索）
+  }, []);  // 体験検索用のMapをメモ化（高速検索のため）
+  const experienceMap = useMemo(() => {
+    const map = new Map();
+    experiences.forEach(exp => map.set(exp.id, exp));
+    return map;
+  }, [experiences]);
+
+  // 体験クリック処理（最適化版 - Map使用で高速検索）
   const handleExperienceClick = useCallback((experienceData) => {
     console.log('=== handleExperienceClick デバッグ ===');
     console.log('クリックされた体験データ:', experienceData);
@@ -354,14 +385,14 @@ const App = () => {
       return;
     }
     
-    // 効率的なデータ取得（find()からMap使用へ）
+    // 効率的なデータ取得（Map使用で高速検索）
     let fullExperience;
     if (typeof experienceData === 'object' && experienceData.id) {
       // IDのみまたは部分オブジェクトの場合
-      fullExperience = experiences.find(exp => exp.id === experienceData.id) || experienceData;
+      fullExperience = experienceMap.get(experienceData.id) || experienceData;
     } else if (typeof experienceData === 'number') {
       // IDが数値で直接渡された場合
-      fullExperience = experiences.find(exp => exp.id === experienceData);
+      fullExperience = experienceMap.get(experienceData);
     } else {
       fullExperience = experienceData;
     }
@@ -373,7 +404,7 @@ const App = () => {
     } else {
       console.log('体験データが見つからない');
     }
-  }, [experiences, selectedExperience]);
+  }, [experienceMap, selectedExperience]);
 
   const navigateToJournalEntry = useCallback(() => {
     setCurrentScreen('journal-entry');

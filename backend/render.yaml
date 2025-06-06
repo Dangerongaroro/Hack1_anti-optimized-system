@@ -3,15 +3,19 @@ services:
     name: seren-path-backend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
     envVars:
       - key: GOOGLE_API_KEY
         sync: false
       - key: DEBUG
-        value: "True"  # 初回デプロイ時はTrue、安定後にFalseに
-      - key: FRONTEND_SERVICE_NAME
-        value: "seren-paths-frontend"  # フロントエンドのサービス名に合わせて変更
+        value: "false"  # 本番環境では false
       - key: FRONTEND_URL
-        sync: false  # Renderダッシュボードで設定
+        value: "https://hack1-anti-optimized-system.onrender.com"
+      - key: PYTHON_VERSION
+        value: "3.11"
     # ヘルスチェック設定
     healthCheckPath: "/health"
+    # リソース設定
+    plan: starter  # 無料プラン
+    # 環境設定
+    runtime: python3.11

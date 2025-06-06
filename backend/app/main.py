@@ -1,29 +1,41 @@
 
-# backend/app/main.py - 構文エラー修正版
+import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from .routes import router as api_router
 
+# 環境変数からCORS設定を取得
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://hack1-anti-optimized-system.onrender.com")
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173", 
+    "http://localhost:5174",
+    "https://frontend.onrender.com",
+    "https://seren-paths-frontend.onrender.com",
+    "https://hack1-anti-optimized-system.onrender.com",
+    FRONTEND_URL
+]
+
+# デバッグモードの場合は全て許可
+if os.getenv("DEBUG", "false").lower() == "true":
+    ALLOWED_ORIGINS.append("*")
+
 app = FastAPI(
     title="Seren Paths API",
     description="アンチ最適化による新しい体験発見サービス",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs" if os.getenv("DEBUG", "false").lower() == "true" else None,
+    redoc_url="/redoc" if os.getenv("DEBUG", "false").lower() == "true" else None
 )
 
-# CORS設定を拡張（デプロイ用） - 構文エラー修正
+# CORS設定（デプロイ対応）
 app.add_middleware(
-    CORSMiddleware,    allow_origins=[  # ← カンマを追加して修正
-        "http://localhost:3000",
-        "http://localhost:5173", 
-        "http://localhost:5174",
-        "https://frontend.onrender.com",
-        "https://seren-paths-frontend.onrender.com",
-        "https://hack1-anti-optimized-system.onrender.com",
-        "*"  # 一時的にすべて許可（デバッグ用）
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,  # デプロイ時は認証情報を無効化
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 app.include_router(api_router, prefix="/api")

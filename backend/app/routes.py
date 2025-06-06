@@ -1,5 +1,6 @@
 # backend/app/routes.py
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response
 from typing import List, Dict, Any  # Listを追加
 from datetime import datetime, timedelta  
 
@@ -28,6 +29,21 @@ router = APIRouter()
 
 # VisualizationServiceのインスタンス化
 visualization_service = VisualizationService()
+
+# CORS プリフライトリクエスト対応
+@router.options("/{path:path}")
+async def options_handler(request: Request, path: str):
+    """すべてのパスでOPTIONSリクエストを処理"""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "86400"
+        }
+    )
+
 # 新しいエンドポイントを追加
 @router.get("/themes/active", response_model=List[ThemeChallengeResponse])
 async def get_active_themes():
