@@ -1,6 +1,6 @@
 // frontend/src/services/api.js
-import { generateChallengeLocal } from '../utils/helpers.js';
-import { supabase } from '../lib/supabase';
+import { generateChallengeLocal } from '@/utils/helpers.js';
+import { supabase } from '@/lib/supabase.js';
 
 // API設定
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';

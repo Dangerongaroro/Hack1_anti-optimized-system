@@ -15,7 +15,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "https://*.vercel.app",  # Vercelドメイン用
-        "https://your-custom-domain.com"  # カスタムドメインがあれば
+        "https://hack1-anti-optimized-system.onrender.com"  # カスタムドメインがあれば
     ],
     allow_credentials=True,
     allow_methods=["*"],
