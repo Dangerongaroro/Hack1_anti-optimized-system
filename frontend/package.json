@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "type": "module",  "scripts": {
     "dev": "vite",
-    "prebuild": "node -e \"if(process.platform==='win32'){console.log('Skipping prebuild on Windows')}else{require('child_process').execSync('rm -rf node_modules package-lock.json && npm install', {stdio: 'inherit'})}\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

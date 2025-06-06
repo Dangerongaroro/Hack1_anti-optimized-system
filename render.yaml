@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "18"
+      - key: VITE_SUPABASE_URL
+        fromEnvironment: VITE_SUPABASE_URL
+      - key: VITE_SUPABASE_ANON_KEY
+        fromEnvironment: VITE_SUPABASE_ANON_KEY      - key: VITE_API_URL
+        value: "https://seren-path-backend.onrender.com/api"
+      - key: VITE_DEV_MODE
+        value: "false"
+      - key: VITE_SKIP_AUTH
+        value: "false"

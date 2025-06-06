@@ -7,11 +7,22 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],  resolve: {
+  plugins: [react()],
+  resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
-  },server: {
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      }
+    }
+  },
+  server: {
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

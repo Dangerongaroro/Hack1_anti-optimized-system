@@ -10,12 +10,12 @@ app = FastAPI(
 
 # CORS設定を拡張（デプロイ用）
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+    CORSMiddleware,    allow_origins=[
         "http://localhost:3000",
         "http://localhost:5173",
         "https://*.vercel.app",  # Vercelドメイン用
-        "https://hack1-anti-optimized-system.onrender.com"  # カスタムドメインがあれば
+        "https://*.onrender.com",  # Renderドメイン全般に対応
+        "https://seren-paths-frontend.onrender.com"  # 予想されるフロントエンドURL
     ],
     allow_credentials=True,
     allow_methods=["*"],
