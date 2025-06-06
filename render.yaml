@@ -24,11 +24,10 @@ services:
   - type: web
     name: seren-paths-frontend
     env: static
-    rootDir: frontend
+    staticPublishPath: dist
     buildCommand: |
       npm ci &&
       npm run build
-    staticPublishPath: dist
 
     envVars:
       - key: NODE_VERSION
