@@ -19,22 +19,27 @@ services:
         value: "."
     healthCheckPath: "/health"
 
+
   # フロントエンドサービス
-   # フロントエンドサービス
   - type: web
     name: seren-paths-frontend
     env: static
-    rootDir: 
+    rootDir: frontend
     buildCommand: |
-      cd frontend &&
       echo "🚀 Building Seren Paths Frontend..." &&
-      echo "📁 Current directory: $(pwd)" &&
+      echo "📁 Initial directory: $(pwd)" &&
+      echo "📂 Directory contents:" &&
+      ls -la &&
       npm ci &&
       npm run build &&
-      echo "✅ Build complete, checking dist..." &&
+      echo "✅ Build complete" &&
+      echo "📁 After build directory: $(pwd)" &&
+      echo "📂 Current directory contents:" &&
+      ls -la &&
+      echo "📂 Dist directory contents:" &&
       ls -la dist/ &&
-      echo "📄 Files in dist:" &&
-      find dist/ -type f | head -10
+      echo "🔍 Finding dist directories from root:" &&
+      find /opt/render/project/src -name "dist" -type d 2>/dev/null || true
     staticPublishPath: dist
     envVars:
       - key: NODE_VERSION
