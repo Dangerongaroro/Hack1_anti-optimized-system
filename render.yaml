@@ -26,11 +26,14 @@ services:
     rootDir: frontend
     buildCommand: |
       echo "🚀 Building Seren Paths Frontend..." &&
+      echo "📁 Current directory: $(pwd)" &&
       npm ci &&
       npm run build &&
       echo "✅ Build complete, checking dist..." &&
-      ls -la dist/
-    staticPublishPath: ./dist
+      ls -la dist/ &&
+      echo "📄 Files in dist:" &&
+      find dist/ -type f | head -10
+    staticPublishPath: dist  # ./ を削除！
     envVars:
       - key: NODE_VERSION
         value: "18.18.0"
@@ -39,7 +42,7 @@ services:
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
       - key: VITE_API_URL
-        value: "https://seren-paths-backend.onrender.com"  # 修正！ /api を削除
+        value: "https://seren-paths-backend.onrender.com"
       - key: VITE_DEV_MODE
         value: "false"
       - key: VITE_SKIP_AUTH
