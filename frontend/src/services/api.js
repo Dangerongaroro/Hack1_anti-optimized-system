@@ -2,23 +2,70 @@
 import { generateChallengeLocal } from '../utils/helpers.js';
 import { supabase } from '../lib/supabase.js';
 
-// API設定
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// API設定（デプロイ対応）
+const getApiBaseUrl = () => {
+  // 本番環境の場合
+  if (import.meta.env.PROD) {
+    return 'https://seren-path-backend.onrender.com/api';
+  }
+  
+  // 開発環境の場合
+  return import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // デバッグ情報をコンソールに出力
 console.log('🔧 API Configuration:');
+console.log('   Environment:', import.meta.env.MODE);
 console.log('   VITE_API_URL:', import.meta.env.VITE_API_URL);
 console.log('   Final API_BASE_URL:', API_BASE_URL);
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5分
 const requestCache = new Map();
 
+// リトライのためのレート制限管理
+let lastApiCall = 0;
+const MIN_API_INTERVAL = 1000; // 1秒間隔
+
+// 統一されたAPI呼び出し関数（認証付き→認証なし→ローカルフォールバック）
+async function callAPIWithFallback(endpoint, options = {}, localFallback = null) {
+  // レート制限チェック
+  const now = Date.now();
+  if (now - lastApiCall < MIN_API_INTERVAL) {
+    console.log('⏳ レート制限により待機中...');
+    await new Promise(resolve => setTimeout(resolve, MIN_API_INTERVAL - (now - lastApiCall)));
+  }
+  lastApiCall = Date.now();
+  try {
+    // まず認証付きAPIを試行
+    const result = await callAuthenticatedAPI(endpoint, options);
+    console.log('✅ 認証付きAPI呼び出し成功');
+    return result;
+  } catch {
+    console.log('🔐 認証エラー、パブリックAPIにフォールバック');
+    
+    try {
+      // 認証なしAPIにフォールバック
+      const result = await callPublicAPI(endpoint, options);
+      console.log('✅ パブリックAPI呼び出し成功');
+      return result;
+    } catch {
+      console.warn('⚠️ API利用不可、ローカルフォールバック使用');
+      
+      if (localFallback) {
+        return localFallback();
+      }
+      throw new Error('All API methods failed and no local fallback provided');
+    }
+  }
+}
+
 // 認証付きAPI呼び出し関数
 async function callAuthenticatedAPI(endpoint, options = {}) {
   const { data: { session } } = await supabase.auth.getSession();
-  
   if (!session) {
-    console.warn('User not authenticated, using fallback');
+    console.log('User not authenticated, using fallback');
     throw new Error('Not authenticated');
   }
   
@@ -29,10 +76,12 @@ async function callAuthenticatedAPI(endpoint, options = {}) {
       'Authorization': `Bearer ${session.access_token}`,
       ...options.headers,
     },
+    // タイムアウト設定
+    signal: AbortSignal.timeout(30000), // 30秒
   });
   
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status}`);
+    throw new Error(`API Error: ${response.status} - ${response.statusText}`);
   }
   
   return response.json();
@@ -46,10 +95,12 @@ async function callPublicAPI(endpoint, options = {}) {
       'Content-Type': 'application/json',
       ...options.headers,
     },
+    // タイムアウト設定
+    signal: AbortSignal.timeout(30000), // 30秒
   });
   
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status}`);
+    throw new Error(`API Error: ${response.status} - ${response.statusText}`);
   }
   
   return response.json();
@@ -73,13 +124,12 @@ const api = {
   setAutoSaveEnabled: (enabled) => {
     localStorage.setItem('autoSaveExperiences', enabled.toString());
   },
-
   // ヘルスチェック機能
   checkHealth: async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/health`);
       return response.ok;
-    } catch (error) {
+    } catch {
       return false;
     }
   },
@@ -92,12 +142,11 @@ const api = {
         timeout: 5000
       });
       return response.ok;
-    } catch (error) {
+    } catch {
       return false;
     }
   },
-
-  // 統合レコメンデーション取得（認証ありと認証なし両対応）
+  // 統合レコメンデーション取得（最適化版）
   getRecommendation: async (level, userPreferences, experiences = []) => {
     if (!api.getAIEnabled()) {
       console.log('🤖 AI disabled, using local recommendation');
@@ -119,92 +168,64 @@ const api = {
     };
 
     try {
-      // まず認証付きAPIを試行
-      const result = await callAuthenticatedAPI('/recommendations', {
+      const result = await callAPIWithFallback('/recommendations', {
         method: 'POST',
         body: JSON.stringify(requestBody)
-      });
+      }, () => generateChallengeLocal(level));
       
       requestCache.set(cacheKey, { data: result, timestamp: Date.now() });
-      console.log('✅ Authenticated recommendation received:', result);
       return result;
-    } catch (authError) {
-      console.log('🔐 Authentication failed, trying public API');
-      
-      try {
-        // 認証なしAPIにフォールバック
-        const result = await callPublicAPI('/recommendations', {
-          method: 'POST',
-          body: JSON.stringify(requestBody)
-        });
-        
-        requestCache.set(cacheKey, { data: result, timestamp: Date.now() });
-        console.log('✅ Public recommendation received:', result);
-        return result;
-      } catch (publicError) {
-        console.warn('⚠️ API unavailable, using local recommendation:', publicError.message);
-        return generateChallengeLocal(level);
-      }
+    } catch (error) {
+      console.warn('⚠️ All API methods failed, using local fallback:', error.message);
+      return generateChallengeLocal(level);
     }
   },
-
-  // ユーザー統計取得
+  // ユーザー統計取得（最適化版）
   getUserStats: async (experiences = []) => {
     try {
       const experiencesParam = encodeURIComponent(JSON.stringify(experiences));
       
-      try {
-        // 認証付きAPI試行
-        return await callAuthenticatedAPI(`/user/stats?experiences=${experiencesParam}`);
-      } catch (authError) {
-        // 認証なしAPIにフォールバック
-        const response = await fetch(`${API_BASE_URL}/user/stats?experiences=${experiencesParam}`);
-        if (response.ok) {
-          return await response.json();
-        }
-        throw new Error('Stats API failed');
-      }
+      const result = await callAPIWithFallback(`/user/stats?experiences=${experiencesParam}`, {
+        method: 'GET'
+      });
+      
+      return result;
     } catch (error) {
       console.warn('Failed to fetch user stats:', error);
+      
+      // フォールバック
+      return {
+        total_experiences: experiences.length,
+        diversity_score: 0.5,
+        growth_trend: "成長中",
+        recent_categories: [],
+        achievements: []
+      };
     }
-    
-    // フォールバック
-    return {
-      total_experiences: experiences.length,
-      diversity_score: 0.5,
-      growth_trend: "成長中",
-      recent_categories: [],
-      achievements: []
-    };
   },
 
-  // チャレンジレベル情報を取得
+  // チャレンジレベル情報を取得（最適化版）
   getChallengeLevels: async () => {
     try {
-      try {
-        return await callAuthenticatedAPI('/challenges/levels');
-      } catch (authError) {
-        const response = await fetch(`${API_BASE_URL}/challenges/levels`);
-        if (response.ok) {
-          return await response.json();
-        }
-        throw new Error('Challenge levels API failed');
-      }
+      const result = await callAPIWithFallback('/challenges/levels', {
+        method: 'GET'
+      });
+      
+      return result;
     } catch (error) {
       console.warn('Failed to fetch challenge levels:', error);
+      
+      // フォールバック
+      return {
+        levels: {
+          1: { name: "プチ・ディスカバリー", emoji: "🌱", description: "日常の小さな変化" },
+          2: { name: "ウィークエンド・チャレンジ", emoji: "🚀", description: "半日～1日の挑戦" },
+          3: { name: "アドベンチャー・クエスト", emoji: "⭐", description: "少し大きな体験" }
+        }
+      };
     }
-    
-    // フォールバック
-    return {
-      levels: {
-        1: { name: "プチ・ディスカバリー", emoji: "🌱", description: "日常の小さな変化" },
-        2: { name: "ウィークエンド・チャレンジ", emoji: "🚀", description: "半日～1日の挑戦" },
-        3: { name: "アドベンチャー・クエスト", emoji: "⭐", description: "少し大きな体験" }
-      }
-    };
   },
-
-  // 強化されたフィードバック送信
+  // 最適化されたフィードバック送信
   sendFeedback: async (experienceId, feedback, experiences = []) => {
     const requestBody = { 
       experience_id: experienceId, 
@@ -213,38 +234,20 @@ const api = {
     };
 
     try {
-      try {
-        // 認証付きAPI試行
-        const result = await callAuthenticatedAPI('/feedback', {
-          method: 'POST',
-          body: JSON.stringify(requestBody)
-        });
-        console.log('✅ Authenticated feedback processed:', result);
-        return result;
-      } catch (authError) {
-        // 認証なしAPIにフォールバック
-        const response = await fetch(`${API_BASE_URL}/feedback`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('✅ Public feedback processed:', result);
-        return result;
-      }
+      const result = await callAPIWithFallback('/feedback', {
+        method: 'POST',
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('✅ フィードバック送信成功:', result);
+      return result;
     } catch (error) {
-      console.warn('Failed to send feedback, will retry later:', error.message);
+      console.warn('フィードバック送信失敗、後で再試行:', error.message);
       api.savePendingFeedback(experienceId, feedback);
       return { status: 'pending', message: 'Feedback saved for later' };
     }
   },
-
-  // 設定更新
+  // 最適化された設定更新
   updatePreferences: async (experiences) => {
     if (!api.getAutoSaveEnabled()) {
       console.log('🔧 Auto-save disabled, skipping API call');
@@ -252,59 +255,43 @@ const api = {
     }
     
     try {
-      try {
-        // 認証付きAPI試行
-        return await callAuthenticatedAPI('/preferences/update', {
-          method: 'POST',
-          body: JSON.stringify({ experiences })
-        });
-      } catch (authError) {
-        // 認証なしAPIにフォールバック
-        const response = await fetch(`${API_BASE_URL}/preferences/update`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ experiences })
-        });
-        return await response.json();
-      }
+      const result = await callAPIWithFallback('/preferences/update', {
+        method: 'POST',
+        body: JSON.stringify({ experiences })
+      });
+      return result;
     } catch (error) {
       console.error('設定の更新に失敗:', error);
       // エラーでも続行
     }
   },
 
-  // ビジュアライゼーションAPI
+  // 最適化されたビジュアライゼーションAPI
   getVisualizationData: async (experiences) => {
     if (!api.getAIEnabled()) {
       console.log('🤖 AI disabled, skipping server-side visualization');
       return null;
     }
     
+    // キャッシングキーを生成（体験の数とハッシュベース）
+    const cacheKey = `viz_${experiences.length}_${JSON.stringify(experiences.slice(-3))}`;
+    const cached = requestCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      console.log('📦 Cached visualization data returned');
+      return cached.data;
+    }
+    
     try {
-      try {
-        // 認証付きAPI試行
-        const result = await callAuthenticatedAPI('/visualization/experience-strings', {
-          method: 'POST',
-          body: JSON.stringify(experiences)
-        });
-        console.log('✅ Authenticated visualization data received');
-        return result.data;
-      } catch (authError) {
-        // 認証なしAPIにフォールバック
-        const response = await fetch(`${API_BASE_URL}/visualization/experience-strings`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(experiences)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('✅ Public visualization data received');
-        return result.data;
-      }
+      const result = await callAPIWithFallback('/visualization/experience-strings', {
+        method: 'POST',
+        body: JSON.stringify(experiences)
+      });
+      
+      const data = result.data || result;
+      requestCache.set(cacheKey, { data, timestamp: Date.now() });
+      console.log('✅ ビジュアライゼーションデータ取得成功（キャッシュ保存）');
+      return data;
     } catch (error) {
       console.error('❌ Server-side visualization failed:', error);
       return null;
