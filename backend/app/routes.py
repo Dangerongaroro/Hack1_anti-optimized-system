@@ -238,12 +238,17 @@ async def health_check():
 async def get_experience_strings_visualization(experiences: List[Dict[str, Any]]):
     """ExperienceStringsの3Dビジュアライゼーションデータを取得"""
     try:
+        print(f"📊 ビジュアライゼーションリクエスト受信: {len(experiences)}件の体験データ")
         visualization_data = visualization_service.generate_visualization_data(experiences)
+        print("✅ ビジュアライゼーションデータ生成成功")
         return {
             "status": "success",
             "data": visualization_data
         }
     except Exception as e:
+        print(f"❌ ビジュアライゼーション生成エラー: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"ビジュアライゼーション生成エラー: {str(e)}")
 
 @router.post("/visualization/spiral-positions")
