@@ -74,16 +74,21 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
             experienceId: userData.experience?.id,
             experienceTitle: userData.experience?.title,
             isCompleted: userData.experience?.completed
-          });
+          });          if (userData.experience && onExperienceClick) {
             // 浮遊ミッションの場合は詳細表示のみ（自動処理は無効化）
-          if (userData.type === 'floating') {
-            console.log('🎈 浮遊ミッションクリック - 詳細表示のみ実行');
-            if (userData.experience && onExperienceClick) {
+            if (userData.type === 'floating') {
+              console.log('🎈 浮遊ミッションクリック - 詳細表示のみ実行');
+              console.log('クリック処理: 体験データを渡す', userData.experience);
+              onExperienceClick(userData.experience);
+            } else {
+              console.log('⚪ 完了済み球体クリック - 詳細表示実行');
+              console.log('クリック処理: 体験データを渡す', userData.experience);
               onExperienceClick(userData.experience);
             }
-          } else if (userData.experience && onExperienceClick) {
-            console.log('⚪ 完了済み球体クリック - 詳細表示実行');
-            onExperienceClick(userData.experience);
+          } else {
+            console.log('❌ onExperienceClickが未定義またはuserData.experienceが無効');
+            console.log('onExperienceClick:', onExperienceClick);
+            console.log('userData.experience:', userData.experience);
           }
         } else {
           console.log('❌ クリック対象が見つかりませんでした');
@@ -278,14 +283,20 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
               experienceTitle: userData.experience?.title,
               isCompleted: userData.experience?.completed
             });
-            
-            if (userData.experience && onExperienceClick) {
+              if (userData.experience && onExperienceClick) {
               if (userData.type === 'floating') {
                 console.log('🎈 浮遊ミッションタップ - 詳細表示のみ実行');
+                console.log('タップ処理: 体験データを渡す', userData.experience);
               } else {
                 console.log('⚪ 完了済み球体タップ - 詳細表示実行');
+                console.log('タップ処理: 体験データを渡す', userData.experience);
               }
-              onExperienceClick(userData.experience);            }
+              onExperienceClick(userData.experience);
+            } else {
+              console.log('❌ onExperienceClickが未定義またはuserData.experienceが無効');
+              console.log('onExperienceClick:', onExperienceClick);
+              console.log('userData.experience:', userData.experience);
+            }
           } else {
             console.log('❌ タップ対象が見つかりませんでした');
           }

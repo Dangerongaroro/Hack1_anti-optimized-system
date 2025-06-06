@@ -3,6 +3,12 @@ import { X, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
 
 // 最適化された体験詳細モーダル
 const ExperienceDetailModal = React.memo(({ experience, onClose, onFeedback, onClearMission }) => {
+  console.log('🖼️ ExperienceDetailModal レンダリング:', {
+    experience,
+    hasExperience: !!experience,
+    experienceId: experience?.id,
+    experienceTitle: experience?.title
+  });
   // 日付フォーマットをメモ化
   const formattedDate = useMemo(() => {
     if (!experience?.date) return '日付不明';

@@ -249,14 +249,19 @@ export const useOptimizedThreeJSScene = (experiences) => {
     meshesRef.current = [];
     hoveredMeshRef.current = null;
   };
-
   /**
    * レイキャスト用メッシュ取得の最適化
    */
   const getInteractableMeshes = () => {
-    return meshesRef.current.filter(mesh => 
+    const interactableMeshes = meshesRef.current.filter(mesh => 
       mesh.userData.type === 'completed' || mesh.userData.type === 'floating'
     );
+    console.log('🎯 getInteractableMeshes:', {
+      totalMeshes: meshesRef.current.length,
+      interactableMeshes: interactableMeshes.length,
+      meshTypes: meshesRef.current.map(m => m.userData.type)
+    });
+    return interactableMeshes;
   };
 
   /**
