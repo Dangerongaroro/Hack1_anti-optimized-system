@@ -1,3 +1,5 @@
+
+# backend/app/main.py - 構文エラー修正版
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from .routes import router as api_router
@@ -8,14 +10,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS設定を拡張（デプロイ用）
+# CORS設定を拡張（デプロイ用） - 構文エラー修正
 app.add_middleware(
-    CORSMiddleware,    allow_origins=[
+    CORSMiddleware,
+    allow_origins=[  # ← カンマを追加して修正
         "http://localhost:3000",
-        "http://localhost:5173",
+        "http://localhost:5173", 
         "http://localhost:5174",
         "https://frontend.onrender.com",
-        "https://seren-paths-frontend.onrender.com"
+        "https://seren-paths-frontend.onrender.com",
+        "*"  # 一時的にすべて許可（デバッグ用）
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -30,4 +34,12 @@ async def read_root():
         "message": "Seren Paths Backend API",
         "version": "1.0.0",
         "status": "running"
+    }
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "Seren Paths API",
+        "version": "1.0.0"
     }
