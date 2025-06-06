@@ -13,9 +13,10 @@ app.add_middleware(
     CORSMiddleware,    allow_origins=[
         "http://localhost:3000",
         "http://localhost:5173",
-        "https://*.vercel.app",  # Vercelドメイン用
-        "https://*.onrender.com",  # Renderドメイン全般に対応
-        "https://seren-paths-frontend.onrender.com"  # 予想されるフロントエンドURL
+        "http://localhost:5174",
+        "https://*.onrender.com",
+        "https://frontend.onrender.com",
+        "https://seren-paths-frontend.onrender.com"
     ],
     allow_credentials=True,
     allow_methods=["*"],
