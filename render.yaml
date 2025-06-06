@@ -16,7 +16,7 @@ services:
       - key: DEBUG
         value: false
       - key: FRONTEND_URL
-        value: "https://hack1-anti-optimized-system.onrender.com"
+        value: https://hack1-anti-optimized-system.onrender.com
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
