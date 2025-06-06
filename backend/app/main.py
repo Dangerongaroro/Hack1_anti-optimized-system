@@ -12,13 +12,13 @@ app = FastAPI(
 
 # CORS設定を拡張（デプロイ用） - 構文エラー修正
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[  # ← カンマを追加して修正
+    CORSMiddleware,    allow_origins=[  # ← カンマを追加して修正
         "http://localhost:3000",
         "http://localhost:5173", 
         "http://localhost:5174",
         "https://frontend.onrender.com",
         "https://seren-paths-frontend.onrender.com",
+        "https://hack1-anti-optimized-system.onrender.com",
         "*"  # 一時的にすべて許可（デバッグ用）
     ],
     allow_credentials=True,

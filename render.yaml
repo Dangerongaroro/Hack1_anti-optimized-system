@@ -17,17 +17,15 @@ services:
         value: "True"
       - key: PYTHONPATH
         value: "."
-    healthCheckPath: "/health"
-
-
-  # フロントエンドサービス
+    healthCheckPath: "/health"  # フロントエンドサービス
   - type: web
     name: seren-paths-frontend
-    env: static
+    env: static 
     staticPublishPath: dist
     buildCommand: |
       npm ci &&
-      npm run build
+      npm run build &&
+      ls -la dist || dir dist
 
     envVars:
       - key: NODE_VERSION
@@ -35,9 +33,8 @@ services:
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
-        sync: false
-      - key: VITE_API_URL
-        value: "https://seren-path-backend.onrender.com"
+        sync: false      - key: VITE_API_URL
+        value: "https://seren-paths-backend.onrender.com/api"
       - key: VITE_DEV_MODE
         value: "false"
       - key: VITE_SKIP_AUTH
