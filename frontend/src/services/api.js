@@ -5,6 +5,11 @@ import { supabase } from '../lib/supabase.js';
 // API設定
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
+// デバッグ情報をコンソールに出力
+console.log('🔧 API Configuration:');
+console.log('   VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('   Final API_BASE_URL:', API_BASE_URL);
+
 const CACHE_DURATION = 5 * 60 * 1000; // 5分
 const requestCache = new Map();
 

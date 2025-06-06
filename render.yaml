@@ -2,7 +2,7 @@
 services:
   # バックエンドサービス
   - type: web
-    name: seren-paths-backend
+    name: seren-path-backend
     env: python
     rootDir: backend
     runtime: python-3.11
@@ -34,7 +34,7 @@ services:
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
         sync: false      - key: VITE_API_URL
-        value: "https://seren-paths-backend.onrender.com/api"
+        value: "https://seren-path-backend.onrender.com/api"
       - key: VITE_DEV_MODE
         value: "false"
       - key: VITE_SKIP_AUTH
