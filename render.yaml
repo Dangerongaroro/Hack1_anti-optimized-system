@@ -32,9 +32,8 @@ services:
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
-        sync: false
-      - key: VITE_API_URL
-        value: "https://seren-path-backend.onrender.com/api"
+        sync: false      - key: VITE_API_URL
+        value: "https://srv-d10sbe63jp1c739anh1g.onrender.com/api"
       - key: VITE_DEV_MODE
         value: "false"
       - key: VITE_SKIP_AUTH
