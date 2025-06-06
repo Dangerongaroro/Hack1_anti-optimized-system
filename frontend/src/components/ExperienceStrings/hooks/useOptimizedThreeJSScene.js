@@ -37,14 +37,13 @@ export const useOptimizedThreeJSScene = (experiences) => {
     const camera = new THREE.PerspectiveCamera(75, rect.width / rect.height, 0.1, 1000);
       // 最適化されたレンダラー設定
     const renderer = new THREE.WebGLRenderer({ 
-      canvas: canvas, 
-      alpha: true,
+      canvas: canvas,    alpha: true,
       antialias: window.devicePixelRatio <= 1, // 高DPIデバイスでは無効化
       powerPreference: "high-performance" // GPU最適化
     });
     
-    // 3Dテクスチャ警告対策
-    renderer.outputEncoding = THREE.sRGBEncoding;
+    // 3Dテクスチャ警告対策（新しいThree.jsバージョン対応）
+    renderer.outputColorSpace = 'srgb';
     THREE.ColorManagement.enabled = true;
     
     // 参照を保存
