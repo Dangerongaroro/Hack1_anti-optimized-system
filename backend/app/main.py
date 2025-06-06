@@ -14,8 +14,7 @@ ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173", 
     "http://localhost:5174",
-    "https://frontend.onrender.com",
-    "https://hack1-anti-optimized-system.onrender.com",  # 実際のフロントエンドURL
+    "https://hack1-anti-optimized-system.onrender.com",# 実際のフロントエンドURL
     FRONTEND_URL
 ]
 
