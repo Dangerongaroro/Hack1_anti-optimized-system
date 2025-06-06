@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase.js';
 const getApiBaseUrl = () => {
   // 本番環境の場合
   if (import.meta.env.PROD) {
-    return 'https://seren-path-backend.onrender.com/api';
+    return 'https://srv-d10sbe63jp1c739anh1g.onrender.com/api';
   }
   
   // 開発環境の場合
