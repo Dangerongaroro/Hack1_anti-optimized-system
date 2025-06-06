@@ -24,7 +24,7 @@ services:
   - type: web
     name: seren-paths-frontend
     env: static
-    rootDir: frontend
+    rootDir: 
     buildCommand: |
       cd frontend &&
       echo "🚀 Building Seren Paths Frontend..." &&
@@ -35,7 +35,7 @@ services:
       ls -la dist/ &&
       echo "📄 Files in dist:" &&
       find dist/ -type f | head -10
-    staticPublishPath: /dist
+    staticPublishPath: dist
     envVars:
       - key: NODE_VERSION
         value: "18.18.0"
