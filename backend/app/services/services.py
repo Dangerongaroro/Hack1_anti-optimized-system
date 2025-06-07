@@ -258,53 +258,78 @@ ai_service = AIRecommendationService()
 def get_recommendation_service(level: int, preferences: Dict, experiences: List[Dict] = None) -> Dict:
     """AI強化されたレコメンドサービス"""
     try:
-        print(f"🚀 Service called with level={level}, preferences={preferences}")
-        print(f"   Experiences: {len(experiences) if experiences else 0} items")
+        print(f"🔄 Recommendation service called - Level: {level}, Experiences: {len(experiences or [])}")
         
-        # データ検証
-        if not isinstance(level, int) or level < 1 or level > 3:
-            raise ValueError(f"Invalid level: {level}")
+        # ユーザー分析
+        user_analysis = serendipity_engine._analyze_user_preferences(experiences or [])
         
-        # 基本レコメンデーションを取得
-        recommendation = serendipity_engine.get_personalized_recommendation(
-            level, preferences, experiences or []
-        )
+        # まずAIレコメンデーションを試行
+        ai_recommendation = None
+        if ai_service.enabled and len(experiences or []) >= 2:  # 最小限の履歴がある場合
+            try:
+                ai_recommendation = ai_service.generate_ai_recommendation(
+                    preferences, experiences or [], level
+                )
+                
+                if ai_recommendation:
+                    print(f"✅ AI recommendation generated: {ai_recommendation.get('title', 'Unknown')}")
+                    return {
+                        "status": "success",
+                        "data": ai_recommendation,
+                        "source": "ai_recommendation",
+                        "ai_enhanced": True,
+                        "engine_version": "2.1-AI"
+                    }
+            except Exception as ai_error:
+                print(f"⚠️ AI recommendation failed: {str(ai_error)}")
         
+        # AI失敗またはAI無効の場合は従来のレコメンデーション
+        recommendation = serendipity_engine.get_personalized_recommendation(level, preferences, experiences)
         print(f"📋 Base recommendation: {recommendation.get('title', 'Unknown')}")
         
-        # AIで強化
-        user_analysis = serendipity_engine._analyze_user_preferences(experiences or [])
-        enhanced_recommendation = ai_service.enhance_challenge_with_ai(
-            recommendation, user_analysis, experiences or []
-        )
+        # AI強化を試行（従来チャレンジの強化）
+        enhanced_recommendation = recommendation
+        if ai_service.enabled:
+            try:
+                enhanced_recommendation = ai_service.enhance_challenge_with_ai(
+                    recommendation, user_analysis, experiences or []
+                )
+            except Exception as e:
+                print(f"⚠️ AI enhancement failed: {str(e)}")
         
         # AI生成のカスタムチャレンジも試行
-        if len(experiences or []) > 5:  # 十分な履歴がある場合のみ
-            custom_challenge = ai_service.suggest_custom_challenge(preferences, experiences, level)
-            if custom_challenge and random.random() < 0.3:  # 30%の確率でカスタムチャレンジ
-                enhanced_recommendation = custom_challenge
-                print("🤖 Using AI-generated custom challenge")
+        if ai_service.enabled and len(experiences or []) > 5:  # 十分な履歴がある場合のみ
+            try:
+                custom_challenge = ai_service.suggest_custom_challenge(preferences, experiences, level)
+                if custom_challenge and random.random() < 0.3:  # 30%の確率でカスタムチャレンジ
+                    enhanced_recommendation = custom_challenge
+                    print("🤖 Using AI-generated custom challenge")
+            except Exception as e:
+                print(f"⚠️ AI custom challenge failed: {str(e)}")
         
-        print(f"✅ AI-Enhanced recommendation generated: {enhanced_recommendation.get('title', 'Unknown')}")
+        print(f"✅ Enhanced recommendation generated: {enhanced_recommendation.get('title', 'Unknown')}")
         
         return {
             "status": "success",
             "data": enhanced_recommendation,
+            "source": "enhanced_serendipity",
             "personalization_applied": True,
             "ai_enhanced": enhanced_recommendation.get('ai_enhanced', False),
             "engine_version": "2.1-AI"
         }
+    
     except Exception as e:
-        print(f"❌ Error in AI recommendation service: {str(e)}")
+        print(f"❌ Recommendation service error: {str(e)}")
         import traceback
         traceback.print_exc()
         
         # フォールバック処理
         try:
-            fallback = serendipity_engine.get_personalized_recommendation(level, {}, [])
+            fallback_challenge = serendipity_engine._create_fallback_challenge(level)
             return {
                 "status": "fallback",
-                "data": fallback,
+                "data": fallback_challenge,
+                "source": "fallback",
                 "error": str(e),
                 "engine_version": "2.1-Fallback"
             }
@@ -315,11 +340,6 @@ def get_recommendation_service(level: int, preferences: Dict, experiences: List[
                 "data": {},
                 "error": f"Service error: {str(e)}, Fallback error: {str(fallback_error)}"
             }
-        return {
-            "status": "error",
-            "message": f"レコメンド生成に失敗しました: {str(e)}",
-            "data": serendipity_engine._create_fallback_challenge(level)
-        }
 
 def process_feedback_service(challenge_id: str, feedback_type: str, rating: int = None) -> Dict:
     """フィードバック処理サービス"""
@@ -334,16 +354,40 @@ def update_preferences_service(preferences: Dict) -> Dict:
     }
 
 def analyze_growth_trends(experiences: List[Dict]) -> Dict:
-    """成長トレンド分析"""
+    """成長トレンド分析（AI強化版）"""
     if not experiences:
         return {"status": "no_data", "message": "分析するデータがありません"}
     
     user_analysis = serendipity_engine._analyze_user_preferences(experiences)
     
-    return {
+    # AIで詳細な成長分析を試行
+    ai_analysis = None
+    if ai_service.enabled and len(experiences) >= 3:
+        try:
+            ai_analysis = ai_service.analyze_growth_pattern(experiences)
+            print(f"✅ AI growth analysis completed")
+        except Exception as e:
+            print(f"⚠️ AI growth analysis failed: {str(e)}")
+    
+    # 基本分析結果
+    base_analysis = {
         "status": "success",
         "total_experiences": user_analysis['total_experiences'],
         "diversity_score": user_analysis['diversity_score'],
         "growth_trend": "expanding" if user_analysis['diversity_score'] > 0.6 else "developing",
+        "category_distribution": user_analysis['category_distribution'],
         "recommendations": "新しい分野への挑戦を続けましょう"
     }
+    
+    # AI分析結果があれば統合
+    if ai_analysis:
+        base_analysis.update({
+            "ai_insights": ai_analysis.get('insights', []),
+            "ai_next_challenges": ai_analysis.get('next_challenge_areas', []),
+            "ai_summary": ai_analysis.get('summary', ''),
+            "ai_encouragement": ai_analysis.get('encouragement', ''),
+            "growth_stage": ai_analysis.get('growth_stage', 'developing'),
+            "ai_enhanced": True
+        })
+    
+    return base_analysis

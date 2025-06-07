@@ -4,6 +4,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 import json
 from dotenv import load_dotenv
+from .prompt_loader import PromptLoader
 
 # LangChainのインポート
 try:
@@ -19,6 +20,9 @@ load_dotenv()
 
 class AIRecommendationService:
     def __init__(self):
+        # プロンプトローダーを初期化
+        self.prompt_loader = PromptLoader()
+        
         # 環境変数の詳細確認
         google_api_key = os.getenv("GOOGLE_API_KEY")
         
@@ -106,8 +110,12 @@ class AIRecommendationService:
             return challenge
         
         try:
-            # プロンプトの構築
-            prompt = self._build_enhancement_prompt(challenge, user_analysis, user_experiences)
+            # プロンプトローダーを使用してプロンプトを構築
+            prompt = self.prompt_loader.format_challenge_enhancement_prompt(
+                challenge=challenge,
+                user_analysis=user_analysis,
+                user_experiences=user_experiences or []
+            )
             
             # LangChainでAI生成
             message = HumanMessage(content=prompt)
@@ -116,12 +124,11 @@ class AIRecommendationService:
             if response.content:
                 ai_enhancement = self._parse_ai_response(response.content)
                 return self._merge_ai_enhancement(challenge, ai_enhancement)
-            
         except Exception as e:
             print(f"🤖 AI Enhancement failed: {str(e)}")
         
         return challenge
-    
+
     def generate_personalized_description(self, challenge: Dict, user_context: Dict) -> str:
         """ユーザーコンテキストに基づいた説明文を生成"""
         if not self.enabled:
@@ -150,13 +157,55 @@ class AIRecommendationService:
         
         return challenge.get('description', '')
     
+    def generate_ai_recommendation(self, user_preferences: Dict, user_experiences: List[Dict], level: int = 2) -> Optional[Dict]:
+        """詳細なプロンプトテンプレートを使用したレコメンデーション生成"""
+        if not self.enabled:
+            return None
+        
+        try:
+            # プロンプトローダーを使用してレコメンデーションプロンプトを構築
+            prompt = self.prompt_loader.format_recommendation_prompt(
+                interests=user_preferences.get('interests', []),
+                avoid_categories=user_preferences.get('avoidCategories', []),
+                level=level,
+                recent_experiences=user_experiences[-10:] if user_experiences else []
+            )
+            
+            print(f"🤖 Generated recommendation prompt (length: {len(prompt)})")
+            
+            message = HumanMessage(content=prompt)
+            response = self.model.invoke([message])
+            
+            if response.content:
+                recommendation = self._parse_ai_response(response.content)
+                if recommendation:
+                    # レコメンデーション用の追加フィールドを設定
+                    recommendation.update({
+                        "level": level,
+                        "ai_generated": True,
+                        "generated_at": datetime.now().isoformat(),
+                        "recommendation_type": "ai_personalized"
+                    })
+                    print(f"✅ AI recommendation generated: {recommendation.get('title', 'Unknown')}")
+                    return recommendation
+        except Exception as e:
+            print(f"🤖 AI Recommendation generation failed: {str(e)}")
+        
+        return None
+
     def suggest_custom_challenge(self, user_preferences: Dict, user_experiences: List[Dict], level: int) -> Optional[Dict]:
         """完全カスタムチャレンジをAIで生成"""
         if not self.enabled:
             return None
         
         try:
-            prompt = self._build_custom_challenge_prompt(user_preferences, user_experiences, level)
+            # プロンプトローダーを使用してプロンプトを構築
+            prompt = self.prompt_loader.format_custom_challenge_prompt(
+                user_preferences=user_preferences,
+                user_experiences=user_experiences,
+                level=level
+            )
+            
             message = HumanMessage(content=prompt)
             response = self.model.invoke([message])
             
@@ -165,80 +214,8 @@ class AIRecommendationService:
                 
         except Exception as e:
             print(f"🤖 Custom challenge generation failed: {str(e)}")
-        
-        return None
-    
-    def _build_enhancement_prompt(self, challenge: Dict, user_analysis: Dict, user_experiences: List[Dict]) -> str:
-        """チャレンジ強化用プロンプト"""
-        recent_categories = []
-        if user_experiences:
-            recent_categories = list(set([exp.get('category', '') for exp in user_experiences[-5:]]))
-        
-        return f"""
-        【チャレンジ強化タスク】
-        
-        基本チャレンジ:
-        - タイトル: {challenge['title']}
-        - カテゴリー: {challenge['category']}
-        - 説明: {challenge.get('description', '')}
-        
-        ユーザー分析:
-        - 総体験数: {user_analysis.get('total_experiences', 0)}
-        - 多様性スコア: {user_analysis.get('diversity_score', 0.5)}
-        - 最近の体験カテゴリー: {', '.join(recent_categories)}
-        
-        このユーザーに合わせてチャレンジを強化してください。
-        以下のJSON形式で返してください（JSON以外は含めないでください）:
-        
-        {{
-            "enhanced_description": "パーソナライズされた説明文",
-            "encouragement": "ユーザーを励ます一言",
-            "tips": ["実行のコツ1", "実行のコツ2"],
-            "expected_discovery": "期待される発見や学び"
-        }}
-        """
-    
-    def _build_custom_challenge_prompt(self, user_preferences: Dict, user_experiences: List[Dict], level: int) -> str:
-        """カスタムチャレンジ生成プロンプト"""
-        avoid_categories = user_preferences.get('avoidCategories', [])
-        interests = user_preferences.get('interests', [])
-        
-        # 最近の体験を分析
-        recent_categories = []
-        if user_experiences:
-            recent_categories = [exp.get('category', '') for exp in user_experiences[-10:]]
-        
-        level_descriptions = {
-            1: "15-30分程度の手軽な体験",
-            2: "1-3時間程度の中程度の挑戦",
-            3: "半日以上の本格的なアドベンチャー"
-        }
-        
-        return f"""
-        【完全オリジナルチャレンジ生成】
-        
-        ユーザープロフィール:
-        - 興味分野: {', '.join(interests) if interests else '未指定'}
-        - 避けたい分野: {', '.join(avoid_categories) if avoid_categories else 'なし'}
-        - 最近の体験: {', '.join(set(recent_categories)) if recent_categories else 'なし'}
-        
-        要求レベル: {level} ({level_descriptions.get(level, '')})
-        
-        アンチ最適化の観点から、このユーザーが予期しない発見をできる完全オリジナルのチャレンジを考案してください。
-        
-        以下のJSON形式で返してください（JSON以外は含めないでください）:
-        
-        {{
-            "title": "チャレンジタイトル",
-            "category": "カテゴリー",
-            "type": "タイプ",
-            "description": "説明文",
-            "estimated_time": "所要時間",
-            "encouragement": "励ましの言葉",
-            "anti_optimization_reason": "なぜこのチャレンジがアンチ最適化なのか"
-        }}
-        """
-    
+            return None
+
     def _parse_ai_response(self, response_text: str) -> Dict:
         """AI応答をパース"""
         try:
@@ -314,7 +291,7 @@ class AIRecommendationService:
                 "status": "success", 
                 "message": "AI service is working",
                 "response": response.content[:100] + "..." if len(response.content) > 100 else response.content
-            }
+            }        
         except Exception as e:
             return {"status": "error", "message": f"AI service test failed: {str(e)}"}
             
@@ -327,19 +304,8 @@ class AIRecommendationService:
             }
         
         try:
-            prompt = f"""
-            ユーザーの体験履歴を分析し、成長パターンと次のステップを提案してください。
-            
-            体験数: {len(experiences)}
-            カテゴリー分布: {self._get_category_distribution(experiences)}
-            
-            以下のJSON形式で返してください：
-            {{
-                "insights": ["具体的な気づき1", "具体的な気づき2"],
-                "next_challenges": ["次に挑戦すべきこと1", "次に挑戦すべきこと2"],
-                "growth_characteristics": "成長の特徴"
-            }}
-            """
+            # プロンプトローダーを使用してプロンプトを構築
+            prompt = self.prompt_loader.format_growth_analysis_prompt(experiences=experiences)
             
             message = HumanMessage(content=prompt)
             response = self.model.invoke([message])
@@ -348,43 +314,54 @@ class AIRecommendationService:
                 return self._parse_ai_response(response.content)
                 
         except Exception as e:
-            print(f"🤖 Growth analysis failed: {str(e)}")
-        
-        return {
-            "insights": ["順調に成長しています"],
-            "next_challenges": ["新しいカテゴリーに挑戦"]
-        }
+            print(f"AI analysis error: {str(e)}")
+            return {
+                "insights": ["分析中にエラーが発生しました"],
+                "next_challenge_areas": ["様々な分野への挑戦"],
+                "summary": "基本的な成長パターンを継続中",
+                "encouragement": "新しい体験を続けていきましょう",
+                "growth_stage": "developing"
+            }
 
-    def suggest_journal_prompts(self, recent_experiences: List[Dict]) -> List[Dict]:
-        """最近の体験に基づいてジャーナルプロンプトを提案"""
-        if not self.enabled:
-            return []
-        
+    def _safe_json_parse(self, content: str) -> Dict:
+        """安全なJSON解析"""
         try:
-            prompt = f"""
-            ユーザーの最近の体験に基づいて、振り返りのためのジャーナルプロンプトを提案してください。
+            # JSONブロックを抽出
+            if "```json" in content:
+                start = content.find("```json") + 7
+                end = content.find("```", start)
+                if end != -1:
+                    content = content[start:end].strip()
             
-            最近の体験:
-            {[exp.get('title', '') for exp in recent_experiences[-5:]]}
-            
-            以下のJSON形式で1つ返してください：
-            {{
-                "id": "ai_suggested",
-                "title": "プロンプトのタイトル",
-                "prompts": ["質問1", "質問2"],
-                "tags": ["タグ1", "タグ2"]
-            }}
-            """
-            
-            message = HumanMessage(content=prompt)
-            response = self.model.invoke([message])
-            
-            if response.content:
-                parsed = self._parse_ai_response(response.content)
-                if parsed:
-                    return [parsed]
-                    
+            return json.loads(content)
         except Exception as e:
-            print(f"🤖 Journal prompt suggestion failed: {str(e)}")
-        
-        return []
+            print(f"JSON parse error: {str(e)}")
+            return {}
+
+    def _create_fallback_response(self, challenge_type: str = "general") -> Dict:
+        """フォールバック応答を作成"""
+        if challenge_type == "enhancement":
+            return {
+                "enhanced_description": "新しい体験への挑戦",
+                "encouragement": "一歩踏み出してみましょう",
+                "tips": ["ゆっくりと始める", "楽しむことを重視する"],
+                "expected_discovery": "新しい発見"
+            }
+        elif challenge_type == "custom":
+            return {
+                "title": "今日の特別な発見",
+                "category": "ライフスタイル",
+                "type": "general",
+                "description": "新しい一日を特別にする小さな冒険",
+                "estimated_time": "30分",
+                "encouragement": "新しい体験を楽しんでください",
+                "anti_optimization_reason": "日常の枠を超えた新しい発見のため"
+            }
+        else:
+            return {
+                "insights": ["継続的な成長を続けています"],
+                "next_challenge_areas": ["新しい分野への挑戦"],
+                "summary": "着実な成長パターン",
+                "encouragement": "新しい体験を続けていきましょう",
+                "growth_stage": "developing"
+            }
