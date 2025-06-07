@@ -8,7 +8,7 @@ import './utils/polyfills.js'
 import './utils/prodDebugHelper.js'
 
 console.log('🚀 アプリケーション初期化開始');
-console.log('📍 実行環境:', process.env.NODE_ENV);
+console.log('📍 実行環境:', import.meta.env.MODE);
 console.log('🌐 ブラウザ情報:', {
   userAgent: navigator.userAgent,
   platform: navigator.platform,

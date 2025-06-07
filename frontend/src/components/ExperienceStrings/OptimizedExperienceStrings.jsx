@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import React, { useRef, useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useOptimizedThreeJSScene } from './hooks/useOptimizedThreeJSScene.js';
 import { useServerVisualization } from './hooks/useServerVisualization.js';
@@ -49,9 +48,8 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       console.log('canvasRef.current:', canvasRef.current);
       return;
     }
-    
-    console.log('🖱️ クリック処理開始 (同期処理版)');
-    console.log('📍 環境:', process.env.NODE_ENV);
+      console.log('🖱️ クリック処理開始 (同期処理版)');
+    console.log('📍 環境:', import.meta.env.MODE);
     
     try {
       const rect = canvasRef.current.getBoundingClientRect();
@@ -285,9 +283,8 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       const tapDuration = touchEndTime - touchState.current.tapStartTime;
       
       // タップの時間が短い場合（300ms以下）にクリック処理を実行
-      if (tapDuration < 300) {
-        console.log('📱 タッチタップ処理開始 (同期処理版)');
-        console.log('📍 環境:', process.env.NODE_ENV);
+      if (tapDuration < 300) {        console.log('📱 タッチタップ処理開始 (同期処理版)');
+        console.log('📍 環境:', import.meta.env.MODE);
         
         try {
           // レイキャスト処理でタップされたオブジェクトを検出
@@ -385,9 +382,8 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     
     touchState.current.touches = Array.from(e.touches);
   }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef]);  // Canvas初期化とアニメーション開始
-  useEffect(() => {
-    console.log('🔍 初期化useEffect開始:', {
-      environment: process.env.NODE_ENV,
+  useEffect(() => {    console.log('🔍 初期化useEffect開始:', {
+      environment: import.meta.env.MODE,
       canvasExists: !!canvasRef.current,
       experiencesLength: experiences.length,
       isInitialized: isInitialized,
