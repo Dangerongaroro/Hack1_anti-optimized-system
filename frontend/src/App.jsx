@@ -130,14 +130,20 @@ const App = () => {
   // generateChallenge関数をmemoize
   const generateChallenge = useCallback(async (level) => {
     try {
+      console.log(`🌐 APIでレベル${level}のお題生成を試行中...`);
       const challenge = await api.getRecommendation(level, userPreferences, experiences);
+      console.log(`✅ APIでレベル${level}のお題生成成功:`, challenge);
       return {
         ...challenge,
         level: level
       };
     } catch (error) {
-      console.error('API接続エラー:', error);
+      console.error(`❌ APIでレベル${level}のお題生成に失敗:`, error);
+      console.warn(`🔄 レベル${level}の生成をローカル処理に切り替えます`);
+      
       const localChallenge = generateChallengeLocal(level);
+      console.log(`🏠 ローカルでレベル${level}のお題生成完了:`, localChallenge);
+      
       return {
         ...localChallenge,
         level: level
@@ -159,7 +165,8 @@ const App = () => {
     }, delay);
   }, []);
 
-  // 初回起動チェック
+
+  // 初回起動チェック - ローカルストレージの重複読み込みを削除
   useEffect(() => {
     api.initialize();
     
@@ -172,10 +179,7 @@ const App = () => {
         setIsFirstLaunch(false);
       }
     }
-    const savedExperiences = localStorage.getItem('experiences');
-    if (savedExperiences) {
-      setExperiences(JSON.parse(savedExperiences).map(exp => ({...exp, date: new Date(exp.date)})));
-    }
+    // experiences の重複読み込みを削除（初期化時に既に読み込み済み）
   }, []);
 
   // 全レベルのお題を生成する関数（依存配列を最適化）
@@ -189,16 +193,21 @@ const App = () => {
       try {
         const challenge = await generateChallenge(level);
         newChallenges[level] = challenge;
+        console.log(`✅ レベル${level}のお題生成完了`);
       } catch (error) {
         console.error(`❌ レベル${level}のお題生成に失敗:`, error);
+        console.warn(`🔄 レベル${level}の生成を緊急ローカル処理に切り替え`);
+        
         const localChallenge = generateChallengeLocal(level);
         newChallenges[level] = localChallenge;
+        console.log(`🏠 緊急ローカル処理でレベル${level}生成完了:`, localChallenge);
       }
     }
     
     setChallengesByLevel(newChallenges);
     setCurrentChallenge(newChallenges[selectedLevel]);
     setChallengesInitialized(true);
+    console.log('🎯 全レベルのお題生成完了:', newChallenges);
   }, [generateChallenge, selectedLevel]); // 必要な依存関係のみ
 
   // 初期化フラグを追加
@@ -217,6 +226,7 @@ const App = () => {
       setCurrentChallenge(challengesByLevel[selectedLevel]);
     }
   }, [userPreferences?.setupCompleted, experiences.length, initializedOnce, generateAllLevelChallenges, selectedLevel, challengesByLevel, challengesInitialized]);const regenerateCurrentLevelChallenge = useCallback(async () => {
+    console.log(`🔄 レベル${selectedLevel}のお題を再生成中...`);
     try {
       const challenge = await generateChallenge(selectedLevel);
       setChallengesByLevel(prev => ({
@@ -224,14 +234,18 @@ const App = () => {
         [selectedLevel]: challenge
       }));
       setCurrentChallenge(challenge);
+      console.log(`✅ レベル${selectedLevel}のお題再生成完了:`, challenge);
     } catch (error) {
-      console.error('お題生成に失敗:', error);
+      console.error(`❌ レベル${selectedLevel}のお題再生成に失敗:`, error);
+      console.warn(`🔄 レベル${selectedLevel}の再生成を緊急ローカル処理に切り替え`);
+      
       const localChallenge = generateChallengeLocal(selectedLevel);
       setChallengesByLevel(prev => ({
         ...prev,
         [selectedLevel]: localChallenge
       }));
       setCurrentChallenge(localChallenge);
+      console.log(`🏠 緊急ローカル処理でレベル${selectedLevel}再生成完了:`, localChallenge);
     }
   }, [generateChallenge, selectedLevel]);
 

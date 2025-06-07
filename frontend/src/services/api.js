@@ -145,8 +145,7 @@ const api = {
     } catch {
       return false;
     }
-  },
-  // 統合レコメンデーション取得（最適化版）
+  },  // 統合レコメンデーション取得（最適化版）
   getRecommendation: async (level, userPreferences, experiences = []) => {
     if (!api.getAIEnabled()) {
       console.log('🤖 AI disabled, using local recommendation');
@@ -161,11 +160,31 @@ const api = {
       return cached.data;
     }
     
+    // データ検証と正規化
+    const validatedExperiences = experiences
+      .filter(exp => exp && typeof exp === 'object')
+      .slice(-10)
+      .map(exp => ({
+        id: exp.id,
+        title: exp.title || '無題の体験',
+        category: exp.category || 'その他',
+        level: exp.level || 1,
+        completed: exp.completed || false,
+        date: exp.date instanceof Date ? exp.date.toISOString() : new Date().toISOString(),
+        type: exp.type || 'general'
+      }));
+
     const requestBody = { 
       level, 
       preferences: userPreferences || {},
-      experiences: experiences.slice(-10)
+      experiences: validatedExperiences
     };
+
+    console.log('📤 Sending request to /recommendations:', {
+      level,
+      preferencesKeys: Object.keys(userPreferences || {}),
+      experiencesCount: validatedExperiences.length
+    });
 
     try {
       const result = await callAPIWithFallback('/recommendations', {
@@ -173,6 +192,7 @@ const api = {
         body: JSON.stringify(requestBody)
       }, () => generateChallengeLocal(level));
       
+      console.log('📥 Received API response:', result);
       requestCache.set(cacheKey, { data: result, timestamp: Date.now() });
       return result;
     } catch (error) {

@@ -32,7 +32,7 @@ class AIRecommendationService:
             try:
                 print("🔄 Attempting to initialize Gemini API...")
                 self.model = ChatGoogleGenerativeAI(
-                    model="gemini-pro",  # モデル名を修正
+                    model="gemma-3-27b-it",  # モデル名を修正
                     google_api_key=google_api_key,
                     temperature=0.7
                 )

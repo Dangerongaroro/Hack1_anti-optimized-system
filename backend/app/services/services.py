@@ -259,16 +259,23 @@ def get_recommendation_service(level: int, preferences: Dict, experiences: List[
     """AI強化されたレコメンドサービス"""
     try:
         print(f"🚀 Service called with level={level}, preferences={preferences}")
+        print(f"   Experiences: {len(experiences) if experiences else 0} items")
+        
+        # データ検証
+        if not isinstance(level, int) or level < 1 or level > 3:
+            raise ValueError(f"Invalid level: {level}")
         
         # 基本レコメンデーションを取得
         recommendation = serendipity_engine.get_personalized_recommendation(
-            level, preferences, experiences
+            level, preferences, experiences or []
         )
+        
+        print(f"📋 Base recommendation: {recommendation.get('title', 'Unknown')}")
         
         # AIで強化
         user_analysis = serendipity_engine._analyze_user_preferences(experiences or [])
         enhanced_recommendation = ai_service.enhance_challenge_with_ai(
-            recommendation, user_analysis, experiences
+            recommendation, user_analysis, experiences or []
         )
         
         # AI生成のカスタムチャレンジも試行
@@ -289,6 +296,25 @@ def get_recommendation_service(level: int, preferences: Dict, experiences: List[
         }
     except Exception as e:
         print(f"❌ Error in AI recommendation service: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # フォールバック処理
+        try:
+            fallback = serendipity_engine.get_personalized_recommendation(level, {}, [])
+            return {
+                "status": "fallback",
+                "data": fallback,
+                "error": str(e),
+                "engine_version": "2.1-Fallback"
+            }
+        except Exception as fallback_error:
+            print(f"❌ Fallback also failed: {str(fallback_error)}")
+            return {
+                "status": "error",
+                "data": {},
+                "error": f"Service error: {str(e)}, Fallback error: {str(fallback_error)}"
+            }
         return {
             "status": "error",
             "message": f"レコメンド生成に失敗しました: {str(e)}",
