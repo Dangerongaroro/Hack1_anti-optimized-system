@@ -154,6 +154,38 @@ async def get_recommendation_endpoint(request: RecommendationRequest):
         print(f"❌ Recommendation endpoint error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"レコメンド生成に失敗しました: {str(e)}")
 
+@router.post("/recommendations/ai", response_model=ChallengeResponse)
+async def get_ai_recommendation_endpoint(request: RecommendationRequest):
+    """AI専用レコメンデーション（詳細プロンプト使用）"""
+    try:
+        print(f"🤖 AI Recommendation request received:")
+        print(f"   Level: {request.level}")
+        print(f"   Experiences count: {len(request.experiences) if request.experiences else 0}")
+        
+        # AIサービスから直接取得
+        from .services.services import ai_service
+        
+        if not ai_service.enabled:
+            raise HTTPException(status_code=503, detail="AI service is not available")
+        
+        ai_recommendation = ai_service.generate_ai_recommendation(
+            request.preferences, 
+            request.experiences or [], 
+            request.level
+        )
+        
+        if ai_recommendation:
+            print(f"✅ AI recommendation generated: {ai_recommendation.get('title', 'Unknown')}")
+            return ai_recommendation
+        else:
+            raise HTTPException(status_code=500, detail="AI recommendation generation failed")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ AI Recommendation endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI レコメンド生成に失敗しました: {str(e)}")
+
 @router.post("/feedback", response_model=StandardResponse)
 async def send_feedback_endpoint(request: FeedbackRequest):
     """体験フィードバックを送信（学習機能付き）"""

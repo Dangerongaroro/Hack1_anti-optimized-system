@@ -432,14 +432,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     const wasUpdated = updateSceneDifferentially(experiences);
     if (wasUpdated) {
       console.log('✅ 差分更新完了 - 新しいオブジェクトのみ追加');
-    }
-  }, [experiences, isInitialized, updateSceneDifferentially]);
-  // レンダリング最適化のためのメモ化された統計情報
-  const stats = React.useMemo(() => {
-    const completed = experiences.filter(exp => exp.completed).length;
-    const floating = experiences.filter(exp => !exp.completed).length;
-    return { completed, floating };
-  }, [experiences]);
+    }  }, [experiences, isInitialized, updateSceneDifferentially]);
 
   return (
     <div className="px-4 bg-black" ref={containerRef}>
@@ -451,29 +444,6 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
           className="w-full h-96 cursor-crosshair relative z-10 bg-black"
           style={{ background: '#000' }}
         />
-
-        {/* 統計や操作説明 */}        <div className="absolute bottom-4 left-4 text-white/80 text-sm z-10">
-          <p className="mb-1">🎯 体験の糸: {stats.completed}本</p>
-          <p>💫 浮遊ミッション: {stats.floating}個</p>
-          {!isInitialized && <p className="text-yellow-300">🔄 最適化中...</p>}
-          {visualizationData && (
-            <p className={`mt-1 ${visualizationData.isServerData ? 'text-green-300' : 'text-orange-300'}`}>
-              {visualizationData.isServerData ? '🔧 サーバー計算使用中' : '💻 フロントエンド計算使用中'}
-            </p>
-          )}
-        </div>
-
-        <div className="absolute bottom-4 right-4 text-white/60 text-xs z-10">
-          <div className="hidden md:block">
-            <p>マウスホイール: ズーム</p>
-            <p>ドラッグ: 視点移動</p>
-            <p>クリック: 体験を選択</p>
-          </div>
-          <div className="md:hidden">
-            <p>ピンチ: ズーム</p>
-            <p>ドラッグ: 視点移動</p>
-            <p>タップ: 体験を選択</p>
-          </div>        </div>
       </div>
     </div>
   );
