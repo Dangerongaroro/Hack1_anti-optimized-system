@@ -133,16 +133,25 @@ async def get_journal_templates(user_context: Dict[str, Any]):
 async def get_recommendation_endpoint(request: RecommendationRequest):
     """パーソナライズされたチャレンジを取得"""
     try:
+        print(f"🔄 Recommendation request received:")
+        print(f"   Level: {request.level}")
+        print(f"   Preferences: {request.preferences}")
+        print(f"   Experiences count: {len(request.experiences) if request.experiences else 0}")
+        
         result = get_recommendation_service(
             request.level, 
             request.preferences, 
             request.experiences
         )
+        
+        print(f"📤 Service result: {result}")
+        
         if result.get("status") == "success" and "data" in result:
             return result["data"]
         else:
             return result.get("data", {})
     except Exception as e:
+        print(f"❌ Recommendation endpoint error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"レコメンド生成に失敗しました: {str(e)}")
 
 @router.post("/feedback", response_model=StandardResponse)

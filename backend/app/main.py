@@ -1,5 +1,3 @@
-
-import os
 import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,8 +13,8 @@ ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173", 
     "http://localhost:5174",
-    "https://hack1-anti-optimized-system.onrender.com",# 実際のフロントエンドURL
-    "https://seren-path-frontend.onrender.com",  # フロントエンドのRenderデプロイURL
+    "https://hack1-anti-optimized-system.onrender.com",
+    "https://seren-path-frontend.onrender.com",
     FRONTEND_URL,
 ]
 
@@ -30,25 +28,16 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs" if os.getenv("DEBUG", "false").lower() == "true" else None,
     redoc_url="/redoc" if os.getenv("DEBUG", "false").lower() == "true" else None
-    version="1.0.0",
-    docs_url="/docs" if os.getenv("DEBUG", "false").lower() == "true" else None,
-    redoc_url="/redoc" if os.getenv("DEBUG", "false").lower() == "true" else None
 )
 
-# CORS設定（デプロイ対応）
-# CORS設定（デプロイ対応）
+# CORS設定（重複を削除）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=False,  # デプロイ時は認証情報を無効化
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=False,  # デプロイ時は認証情報を無効化
+    allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["*"]
-    expose_headers=["*"]
+    expose_headers=["*"],
 )
 
 app.include_router(api_router, prefix="/api")
