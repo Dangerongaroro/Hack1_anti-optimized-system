@@ -17,6 +17,13 @@ export default defineConfig({
     sourcemap: false,
     minify: 'terser',
     chunkSizeWarningLimit: 1000,
+    terserOptions: {
+      compress: {
+        // 本番環境でもconsole.logを保持（デバッグ用）
+        drop_console: false,
+        drop_debugger: false,
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: (id) => {

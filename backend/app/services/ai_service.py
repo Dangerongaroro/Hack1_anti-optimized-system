@@ -38,7 +38,7 @@ class AIRecommendationService:
                 self.model = ChatGoogleGenerativeAI(
                     model="gemma-3-27b-it",  # モデル名を修正
                     google_api_key=google_api_key,
-                    temperature=0.7
+                    temperature=1.0
                 )
                 self.enabled = True
                 print("✅ AI Service: Gemini API initialized successfully")
@@ -81,7 +81,7 @@ class AIRecommendationService:
                 "status": "success",
                 "message": "AI service is working",
                 "response_length": len(response.content),
-                "model_name": "gemini-pro"
+                "model_name": "gemma-3-27b-it",
             }
         except Exception as e:
             return {
@@ -116,6 +116,7 @@ class AIRecommendationService:
                 user_analysis=user_analysis,
                 user_experiences=user_experiences or []
             )
+            print(prompt)
             
             # LangChainでAI生成
             message = HumanMessage(content=prompt)
