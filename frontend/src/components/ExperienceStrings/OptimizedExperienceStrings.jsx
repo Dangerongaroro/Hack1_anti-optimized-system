@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useOptimizedThreeJSScene } from './hooks/useOptimizedThreeJSScene.js';
 import { useServerVisualization } from './hooks/useServerVisualization.js';
@@ -40,21 +41,31 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     getInteractableMeshes,
     sceneRef,  // 追加: シーン参照
     updateSceneDifferentially  // 差分更新システム
-  } = useOptimizedThreeJSScene(experiences);
-  // 最適化されたクリックハンドラー（デバウンス機能付き）
+  } = useOptimizedThreeJSScene(experiences);  // 最適化されたクリックハンドラー（同期処理版 - 本番環境対応）
   const optimizedClickHandler = useCallback((e) => {
-    if (!isInitialized || !canvasRef.current) return;
+    if (!isInitialized || !canvasRef.current) {
+      console.log('❌ クリック処理中止: 初期化未完了またはキャンバス未使用');
+      console.log('isInitialized:', isInitialized);
+      console.log('canvasRef.current:', canvasRef.current);
+      return;
+    }
     
-    console.log('🖱️ クリック処理開始');
+    console.log('🖱️ クリック処理開始 (同期処理版)');
+    console.log('📍 環境:', process.env.NODE_ENV);
     
-    // レイキャスト計算をrequestIdleCallbackで非同期化
-    requestIdleCallback(() => {
+    try {
       const rect = canvasRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
       mouseRef.current.x = (x / rect.width) * 2 - 1;
       mouseRef.current.y = -(y / rect.height) * 2 + 1;
+
+      console.log('📏 マウス座標:', {
+        raw: { x: e.clientX, y: e.clientY },
+        canvas: { x, y },
+        normalized: { x: mouseRef.current.x, y: mouseRef.current.y }
+      });
 
       const meshes = getInteractableMeshes();
       console.log('📋 クリック可能なメッシュ数:', meshes.length);
@@ -64,6 +75,10 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
         const intersects = raycasterRef.current.intersectObjects(meshes);
         
         console.log('🎯 レイキャスト結果:', intersects.length, 'つのオブジェクトがヒット');
+        console.log('📊 カメラ状態:', {
+          position: cameraRef.current.position,
+          target: cameraRef.current.lookAt ? 'available' : 'unavailable'
+        });
         
         if (intersects.length > 0) {
           const clickedObject = intersects[0].object;
@@ -74,7 +89,9 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
             experienceId: userData.experience?.id,
             experienceTitle: userData.experience?.title,
             isCompleted: userData.experience?.completed
-          });          if (userData.experience && onExperienceClick) {
+          });
+          
+          if (userData.experience && onExperienceClick) {
             // 浮遊ミッションの場合は詳細表示のみ（自動処理は無効化）
             if (userData.type === 'floating') {
               console.log('🎈 浮遊ミッションクリック - 詳細表示のみ実行');
@@ -92,9 +109,23 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
           }
         } else {
           console.log('❌ クリック対象が見つかりませんでした');
+          console.log('💡 デバッグ情報:', {
+            meshCount: meshes.length,
+            rayOrigin: raycasterRef.current.ray.origin,
+            rayDirection: raycasterRef.current.ray.direction
+          });
         }
+      } else {
+        console.log('❌ レイキャスト実行不可:', {
+          raycaster: !!raycasterRef.current,
+          camera: !!cameraRef.current,
+          meshCount: meshes.length
+        });
       }
-    });
+    } catch (error) {
+      console.error('💥 クリック処理でエラーが発生:', error);
+      console.error('エラー詳細:', error.stack);
+    }
   }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef]);
 
   // 最適化されたホイールハンドラー
@@ -244,8 +275,7 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       
       touchState.current.lastDistance = distance;
     }
-  }, [cameraRef]);
-  // タッチ終了ハンドラー
+  }, [cameraRef]);  // タッチ終了ハンドラー（同期処理版 - 本番環境対応）
   const handleTouchEnd = useCallback((e) => {
     e.preventDefault();
     
@@ -253,53 +283,83 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     if (touchState.current.isTap && isInitialized && canvasRef.current) {
       const touchEndTime = Date.now();
       const tapDuration = touchEndTime - touchState.current.tapStartTime;
-        // タップの時間が短い場合（300ms以下）にクリック処理を実行
+      
+      // タップの時間が短い場合（300ms以下）にクリック処理を実行
       if (tapDuration < 300) {
-        console.log('📱 タッチタップ処理開始');
+        console.log('📱 タッチタップ処理開始 (同期処理版)');
+        console.log('📍 環境:', process.env.NODE_ENV);
         
-        // レイキャスト処理でタップされたオブジェクトを検出
-        const rect = canvasRef.current.getBoundingClientRect();
-        const x = touchState.current.tapStartPos.x - rect.left;
-        const y = touchState.current.tapStartPos.y - rect.top;
+        try {
+          // レイキャスト処理でタップされたオブジェクトを検出
+          const rect = canvasRef.current.getBoundingClientRect();
+          const x = touchState.current.tapStartPos.x - rect.left;
+          const y = touchState.current.tapStartPos.y - rect.top;
 
-        mouseRef.current.x = (x / rect.width) * 2 - 1;
-        mouseRef.current.y = -(y / rect.height) * 2 + 1;
+          mouseRef.current.x = (x / rect.width) * 2 - 1;
+          mouseRef.current.y = -(y / rect.height) * 2 + 1;
 
-        const meshes = getInteractableMeshes();
-        console.log('📋 タップ可能なメッシュ数:', meshes.length);
-        
-        if (raycasterRef.current && cameraRef.current && meshes.length > 0) {
-          raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
-          const intersects = raycasterRef.current.intersectObjects(meshes);
+          console.log('📏 タッチ座標:', {
+            raw: touchState.current.tapStartPos,
+            canvas: { x, y },
+            normalized: { x: mouseRef.current.x, y: mouseRef.current.y }
+          });
+
+          const meshes = getInteractableMeshes();
+          console.log('📋 タップ可能なメッシュ数:', meshes.length);
           
-          console.log('🎯 タップレイキャスト結果:', intersects.length, 'つのオブジェクトがヒット');
-            if (intersects.length > 0) {
-            const tappedObject = intersects[0].object;
-            const userData = tappedObject.userData;
+          if (raycasterRef.current && cameraRef.current && meshes.length > 0) {
+            raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
+            const intersects = raycasterRef.current.intersectObjects(meshes);
             
-            console.log('📦 タップされたオブジェクト:', {
-              type: userData.type,
-              experienceId: userData.experience?.id,
-              experienceTitle: userData.experience?.title,
-              isCompleted: userData.experience?.completed
+            console.log('🎯 タップレイキャスト結果:', intersects.length, 'つのオブジェクトがヒット');
+            console.log('📊 カメラ状態:', {
+              position: cameraRef.current.position,
+              target: cameraRef.current.lookAt ? 'available' : 'unavailable'
             });
+            
+            if (intersects.length > 0) {
+              const tappedObject = intersects[0].object;
+              const userData = tappedObject.userData;
+              
+              console.log('📦 タップされたオブジェクト:', {
+                type: userData.type,
+                experienceId: userData.experience?.id,
+                experienceTitle: userData.experience?.title,
+                isCompleted: userData.experience?.completed
+              });
+              
               if (userData.experience && onExperienceClick) {
-              if (userData.type === 'floating') {
-                console.log('🎈 浮遊ミッションタップ - 詳細表示のみ実行');
-                console.log('タップ処理: 体験データを渡す', userData.experience);
+                if (userData.type === 'floating') {
+                  console.log('🎈 浮遊ミッションタップ - 詳細表示のみ実行');
+                  console.log('タップ処理: 体験データを渡す', userData.experience);
+                } else {
+                  console.log('⚪ 完了済み球体タップ - 詳細表示実行');
+                  console.log('タップ処理: 体験データを渡す', userData.experience);
+                }
+                onExperienceClick(userData.experience);
               } else {
-                console.log('⚪ 完了済み球体タップ - 詳細表示実行');
-                console.log('タップ処理: 体験データを渡す', userData.experience);
+                console.log('❌ onExperienceClickが未定義またはuserData.experienceが無効');
+                console.log('onExperienceClick:', onExperienceClick);
+                console.log('userData.experience:', userData.experience);
               }
-              onExperienceClick(userData.experience);
             } else {
-              console.log('❌ onExperienceClickが未定義またはuserData.experienceが無効');
-              console.log('onExperienceClick:', onExperienceClick);
-              console.log('userData.experience:', userData.experience);
+              console.log('❌ タップ対象が見つかりませんでした');
+              console.log('💡 デバッグ情報:', {
+                meshCount: meshes.length,
+                rayOrigin: raycasterRef.current.ray.origin,
+                rayDirection: raycasterRef.current.ray.direction
+              });
             }
           } else {
-            console.log('❌ タップ対象が見つかりませんでした');
+            console.log('❌ タップレイキャスト実行不可:', {
+              raycaster: !!raycasterRef.current,
+              camera: !!cameraRef.current,
+              meshCount: meshes.length
+            });
           }
+        } catch (error) {
+          console.error('💥 タップ処理でエラーが発生:', error);
+          console.error('エラー詳細:', error.stack);
         }
       }
     }
@@ -326,8 +386,23 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
     touchState.current.touches = Array.from(e.touches);
   }, [isInitialized, getInteractableMeshes, onExperienceClick, cameraRef, raycasterRef]);  // Canvas初期化とアニメーション開始
   useEffect(() => {
+    console.log('🔍 初期化useEffect開始:', {
+      environment: process.env.NODE_ENV,
+      canvasExists: !!canvasRef.current,
+      experiencesLength: experiences.length,
+      isInitialized: isInitialized,
+      sceneExists: !!sceneRef.current,
+      serverLoading: serverLoading
+    });
+
     // 🎯 本当に初期化が必要な場合のみ実行
-    if (!canvasRef.current || experiences.length === 0) return;
+    if (!canvasRef.current || experiences.length === 0) {
+      console.log('❌ 初期化条件不満足:', {
+        canvas: !!canvasRef.current,
+        experiencesLength: experiences.length
+      });
+      return;
+    }
 
     // 🎯 シーンが既に初期化されており、要素数に変化がない場合はスキップ
     if (isInitialized && sceneRef.current) {
@@ -350,7 +425,9 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
         console.log('🖥️ サーバーサイドビジュアライゼーションデータを使用:', visualizationData);
       } else {
         console.log('💻 フロントエンド計算でビジュアライゼーションを実行');
-      }      // シーン初期化（サーバーデータまたはフロントエンド計算）
+      }      
+
+      // シーン初期化（サーバーデータまたはフロントエンド計算）
       // 🎯 初回初期化時のみ強制クリーンアップを実行
       const forceCleanup = !isInitialized;
       console.log('🎯 初期化モード分析:', {
@@ -367,6 +444,12 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       
       setIsInitialized(true);
       console.log('✅ 3Dビジュアライゼーションが正常に初期化されました');
+      console.log('📊 初期化完了時の状態:', {
+        cameraExists: !!cameraRef.current,
+        raycasterExists: !!raycasterRef.current,
+        sceneExists: !!sceneRef.current,
+        meshCount: getInteractableMeshes ? getInteractableMeshes().length : 'function not available'
+      });
 
       // イベントリスナーの設定
       const resizeHandler = () => handleResize(canvas);
@@ -385,8 +468,11 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
       canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
       canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
+      console.log('🎮 イベントリスナー登録完了');
+
       // クリーンアップ関数
       return () => {
+        console.log('🧹 コンポーネントクリーンアップ開始');
         setIsInitialized(false);
         
         // アニメーションの停止
@@ -411,8 +497,10 @@ const OptimizedExperienceStrings = ({ experiences = [], onExperienceClick }) => 
         
         // リソースのクリーンアップ
         cleanup();
+        console.log('🧹 クリーンアップ完了');
       };    } catch (error) {
-      console.error('最適化されたシーンの初期化に失敗しました:', error);
+      console.error('💥 最適化されたシーンの初期化に失敗しました:', error);
+      console.error('エラー詳細:', error.stack);
       setIsInitialized(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
